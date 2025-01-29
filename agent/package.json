@@ -25,7 +25,6 @@
         "@elizaos/adapter-supabase": "workspace:*",
         "@elizaos/client-auto": "workspace:*",
         "@elizaos/client-direct": "workspace:*",
-        "@elizaos/client-discord": "workspace:*",
         "@elizaos/client-farcaster": "workspace:*",
         "@elizaos/client-lens": "workspace:*",
         "@elizaos/client-slack": "workspace:*",
