@@ -1,4 +1,5 @@
 {
+    "extends": "../../tsconfig.json",
     "compilerOptions": {
         "target": "ESNext",
         "module": "ESNext",
@@ -25,10 +26,7 @@
         "allowArbitraryExtensions": true,
         "customConditions": [
             "@elizaos/source"
-        ],
-        "types": [
-            "node"
-        ],
+        ]
     },
     "include": [
         "src/**/*"

@@ -7,10 +7,7 @@
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "allowImportingTsExtensions": true,
-        "noEmit": true,
-        "types": [
-            "node"
-        ]
+        "noEmit": true
     },
     "files": [],
     "references": [
