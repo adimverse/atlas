@@ -52,6 +52,7 @@ import {
     type Evaluator,
     type Memory,
 } from "./types.ts";
+import { embed } from "./embedding.ts"
 import { stringToUuid } from "./uuid.ts";
 
 /**
@@ -974,6 +975,73 @@ export class AgentRuntime implements IAgentRuntime {
         }
     }
 
+    async getRelevantMemories(message: Memory, count: number = 5): Promise<Memory[]> {
+        if (!message?.content?.text) {
+            elizaLogger.warn("Invalid message for memory search");
+            return [];
+        }
+
+        const processed = knowledge.preprocess(message.content.text);
+        if (!processed) {
+            elizaLogger.warn("Empty processed text in getRelevantMemories");
+            return [];
+        }
+        const embedding = await embed(this, processed);
+
+        // Search through message memories
+        const relevantMemories = await this.messageManager.searchMemoriesByEmbedding(
+            embedding,
+            {
+                roomId: message.roomId,
+                count,
+                match_threshold: 0.1,
+                unique: true
+            }
+        );
+
+        elizaLogger.debug("Found relevant memories:", {
+            query: processed,
+            count: relevantMemories.length,
+            firstMemory: relevantMemories[0]?.content.text
+        });
+
+        return relevantMemories;
+    }
+
+    async getReleventKnowledge(message: Memory): Promise<string> {
+        const recentMessages = await this.messageManager.getMemories({
+            roomId: message.roomId,
+            count: 3,
+            unique: false,
+        });
+
+        const knowledgePromises = recentMessages.map(async (msg) => {
+            const relevantKnowledge = await knowledge.getFragments(this, {
+                ...msg,
+                content: { ...msg.content }
+            }, 3);
+            return relevantKnowledge;
+        });
+
+        const allKnowledge = await Promise.all(knowledgePromises);
+
+        const uniqueKnowledge = Array.from(
+            new Map(
+                allKnowledge.flat().map(item => [item.id, item])
+            ).values()
+        );
+
+        const combinedKnowledge: KnowledgeItem = {
+            id: message.id,
+            content: {
+                text: uniqueKnowledge.map(k => k.content.text).join('\n'),
+                type: 'text'
+            }
+        };
+
+        return formatKnowledge([combinedKnowledge]);
+    }
+
     /**
      * Compose the state of the agent into an object that can be passed or used for response generation.
      * @param message The message to compose the state from.
@@ -1136,7 +1204,7 @@ Text: ${attachment.text}
             return this.messageManager.getMemoriesByRoomIds({
                 // filter out the current room id from rooms
                 roomIds: rooms.filter((room) => room !== roomId),
-                limit: 20,
+                limit: 10,
             });
         };
 
@@ -1225,6 +1293,7 @@ Text: ${attachment.text}
         const initialState = {
             agentId: this.agentId,
             agentName,
+            system: this.character.system,
             bio,
             lore,
             adjective:
@@ -1366,6 +1435,18 @@ Text: ${attachment.text}
                     : "",
             ...additionalKeys,
         } as State;
+
+        elizaLogger.debug("State knowledge size:", {
+            relevantKnowledge: typeof initialState.relevantKnowledge === 'string'
+                ? initialState.relevantKnowledge.length
+                : 'not a string',
+            stateKeys: Object.keys(initialState),
+            relevantKnowledgeType: typeof initialState.relevantKnowledge,
+            // Log a preview of the content
+            preview: typeof initialState.relevantKnowledge === 'string'
+                ? initialState.relevantKnowledge.substring(0, 100) + '...'
+                : 'not a string'
+        });
 
         const actionPromises = this.actions.map(async (action: Action) => {
             const result = await action.validate(this, message, initialState);
