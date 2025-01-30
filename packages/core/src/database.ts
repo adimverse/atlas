@@ -446,5 +446,4 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
             throw error;
         }
     }
-    abstract isFreshDatabase(): Promise<boolean>;
 }
