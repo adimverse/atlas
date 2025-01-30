@@ -649,6 +649,7 @@ export enum Clients {
     AUTO = "auto",
     SLACK = "slack",
     GITHUB = "github",
+    ATLAS_TWITTER = "atlas_twitter",
 }
 
 export interface IAgentConfig {
@@ -875,6 +876,24 @@ export type Character = {
     };
     /**Optinal Parent characters to inherit information from */
     extends?: string[];
+    /** Optional Twitter Spaces configuration */
+    twitterSpaces?: {
+        maxSpeakers?: number;
+        topics?: string[];
+        typicalDurationMinutes?: number;
+        idleKickTimeoutMs?: number;
+        minIntervalBetweenSpacesMinutes?: number;
+        businessHoursOnly?: boolean;
+        randomChance?: number;
+        enableIdleMonitor?: boolean;
+        enableSttTts?: boolean;
+        enableRecording?: boolean;
+        voiceId?: string;
+        sttLanguage?: string;
+        gptModel?: string;
+        systemPrompt?: string;
+        speakerMaxDurationMs?: number;
+    };
 };
 
 /**

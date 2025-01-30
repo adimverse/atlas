@@ -12,6 +12,7 @@ import { TwitterClientInterface } from "@elizaos/client-twitter";
 // import { ReclaimAdapter } from "@elizaos/plugin-reclaim";
 import { DirectClient } from "@elizaos/client-direct";
 import { PrimusAdapter } from "@elizaos/plugin-primus";
+import { AtlasTwitterClientInterface } from "@elizaos/client-atlas-twitter"
 
 import {
     AgentRuntime,
@@ -83,6 +84,7 @@ import { teeLogPlugin } from "@elizaos/plugin-tee-log";
 import { teeMarlinPlugin } from "@elizaos/plugin-tee-marlin";
 import { tonPlugin } from "@elizaos/plugin-ton";
 import { webSearchPlugin } from "@elizaos/plugin-web-search";
+import { storytellerPlugin } from "@elizaos/plugin-storyteller";
 
 import { giphyPlugin } from "@elizaos/plugin-giphy";
 import { letzAIPlugin } from "@elizaos/plugin-letzai";
@@ -148,6 +150,16 @@ function tryLoadFile(filePath: string): string | null {
         return null;
     }
 }
+
+function cleanSystemPrompt(prompt: string): string {
+    return prompt
+        .replace(/\\"/g, '"')  // Replace escaped quotes with regular quotes
+        .replace(/^["']|["']$/g, '')  // Remove wrapping quotes
+        .replace(/\\n/g, '\n')  // Replace escaped newlines
+        .replace(/\s+/g, ' ')  // Normalize whitespace
+        .trim();
+}
+
 function mergeCharacters(base: Character, child: Character): Character {
     const mergeObjects = (baseObj: any, childObj: any) => {
         const result: any = {};
@@ -272,6 +284,62 @@ export async function loadCharacters(
                 elizaLogger.info(
                     `Successfully loaded character from: ${resolvedPath}`
                 );
+
+                // Additional logging
+                elizaLogger.info("Loading character:", character.name);
+                elizaLogger.info("System Prompt:", character?.system);
+
+                // Load custom system prompt plugins
+                if (character?.system?.startsWith("@import:")) {
+                    const promptPath = character.system.replace("@import:", "");
+                    const pathsToTry = [
+                        path.resolve(process.cwd(), promptPath + '.txt'),
+                        path.resolve(process.cwd(), promptPath + '.js'),
+                        path.resolve(__dirname, promptPath + '.txt'),
+                        path.resolve(__dirname, '..', promptPath + '.js')
+                    ];
+
+                    elizaLogger.info("Trying paths:", pathsToTry.map(p => ({
+                        path: p,
+                        exists: fs.existsSync(p)
+                    })));
+
+                    let imported = false;
+                    for (const tryPath of pathsToTry) {
+                        try {
+                            if (fs.existsSync(tryPath)) {
+                                const content = fs.readFileSync(tryPath, 'utf8');
+                                if (tryPath.endsWith('.js')) {
+                                    const match = content.match(/export const atlasSystemPrompt = "([\s\S]*)"/);
+                                    if (match && match[1]) {
+                                        character.system = cleanSystemPrompt(match[1]);
+                                        elizaLogger.info("Successfully loaded system prompt from:", tryPath);
+                                        elizaLogger.info("Prompt content:", character.system.substring(0, 100) + "...");
+                                        imported = true;
+                                        break;
+                                    }
+                                } else if (tryPath.endsWith('.txt')) {
+                                    // For .txt files, use the content directly
+                                    //character.system = content.trim(); // Added trim() to remove any extra whitespace
+                                    character.system = cleanSystemPrompt(content);
+                                    elizaLogger.info("Successfully loaded system prompt from:", tryPath);
+                                    elizaLogger.info("Prompt content:", character.system.substring(0, 100) + "...");
+                                    imported = true;
+                                    break;
+                                } else {
+                                    elizaLogger.error("Failed to extract prompt from content:", content.substring(0, 100) + "...");
+                                }
+                            }
+                        } catch (error) {
+                            elizaLogger.error("Load attempt failed for path:", tryPath);
+                            elizaLogger.error("Error details:", error);
+                        }
+                    }
+
+                    if (!imported) {
+                        elizaLogger.error("Failed to load system prompt from any path");
+                    }
+                }
             } catch (e) {
                 elizaLogger.error(
                     `Error parsing character from ${resolvedPath}: ${e}`
@@ -460,7 +528,7 @@ export function getTokenForProvider(
     }
 }
 
-function initializeDatabase(dataDir: string) {
+async function initializeDatabase(dataDir: string) {
     if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
         elizaLogger.info("Initializing Supabase connection...");
         const db = new SupabaseDatabaseAdapter(
@@ -485,16 +553,14 @@ function initializeDatabase(dataDir: string) {
             parseInputs: true,
         });
 
-        // Test the connection
-        db.init()
-            .then(() => {
-                elizaLogger.success("Successfully connected to PostgreSQL database");
-            })
-            .catch((error) => {
-                elizaLogger.error("Failed to connect to PostgreSQL:", error);
-            });
-
-        return db;
+        try {
+            await db.init();
+            elizaLogger.success("Successfully connected to PostgreSQL database");
+            return db;
+        } catch (error) {
+            elizaLogger.error("Failed to connect to PostgreSQL:", error);
+            throw error;
+        }
     } else if (process.env.PGLITE_DATA_DIR) {
         elizaLogger.info("Initializing PgLite adapter...");
         // `dataDir: memory://` for in memory pg
@@ -508,7 +574,7 @@ function initializeDatabase(dataDir: string) {
         const db = new SqliteDatabaseAdapter(new Database(filePath));
 
         // Test the connection
-        db.init()
+        await db.init()
             .then(() => {
                 elizaLogger.success("Successfully connected to SQLite database");
             })
@@ -548,6 +614,11 @@ export async function initializeClients(
         if (twitterClient) {
             clients.twitter = twitterClient;
         }
+    }
+
+    if (clientTypes.includes(Clients.ATLAS_TWITTER)) {
+        const atlasTwitterClient = await AtlasTwitterClientInterface.start(runtime);
+        if (atlasTwitterClient) clients.atlas_twitter = atlasTwitterClient
     }
 
     if (clientTypes.includes(Clients.FARCASTER)) {
@@ -946,10 +1017,16 @@ async function startAgent(
             fs.mkdirSync(dataDir, { recursive: true });
         }
 
-        db = initializeDatabase(dataDir) as IDatabaseAdapter &
+        db = await initializeDatabase(dataDir) as IDatabaseAdapter &
             IDatabaseCacheAdapter;
 
         await db.init();
+        await db.deleteCache({
+            key: '*', // Match all keys
+            agentId: character.id,
+        })
+        await db.removeAllMemories('*-*-*-*-*', '*'); // UUID pattern for roomId, wildcard for tablename
+        elizaLogger.info("Caches cleared for agent:", character.name);
 
         const cache = initializeCache(
             process.env.CACHE_STORE ?? CacheStore.DATABASE,
@@ -957,6 +1034,16 @@ async function startAgent(
             "",
             db
         ); // "" should be replaced with dir for file system caching. THOUGHTS: might probably make this into an env
+
+        await cache.delete('twitter/*');
+        await cache.delete(`twitter/${character.name}/*`);
+        await cache.delete('twitter/tweet_generation_*');
+        await cache.delete('twitter/quote_generation_*');
+        await cache.delete('twitter/reply_generation_*');
+        // Clear embedding caches
+        await cache.delete('embedding/*');
+        elizaLogger.info("Caches cleared");
+
         const runtime: AgentRuntime = await createAgent(
             character,
             db,

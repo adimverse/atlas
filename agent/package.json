@@ -90,6 +90,8 @@
         "@elizaos/plugin-twitter": "workspace:*",
         "@elizaos/plugin-video-generation": "workspace:*",
         "@elizaos/plugin-web-search": "workspace:*",
+        "@elizaos/plugin-storyteller": "workspace:*",
+        "@elizaos/client-atlas-twitter": "workspace:*",
         "@elizaos/plugin-zksync-era": "workspace:*",
         "readline": "1.3.0",
         "ws": "8.18.0",
