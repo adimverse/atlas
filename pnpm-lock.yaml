@@ -985,9 +985,6 @@ importers:
       '@ai-sdk/groq':
         specifier: 0.0.3
         version: 0.0.3(zod@3.23.8)
-      '@ai-sdk/mistral':
-        specifier: ^1.0.8
-        version: 1.1.5(zod@3.23.8)
       '@ai-sdk/openai':
         specifier: 1.0.5
         version: 1.0.5(zod@3.23.8)
@@ -2966,12 +2963,6 @@ packages:
 
   '@ai-sdk/groq@0.0.3':
     resolution: {integrity: sha512-Iyj2p7/M0TVhoPrQfSiwfvjTpZFfc17a6qY/2s22+VgpT0yyfai9dVyLbfUAdnNlpGGrjDpxPHqK1L03r4KlyA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      zod: ^3.0.0
-
-  '@ai-sdk/mistral@1.1.5':
-    resolution: {integrity: sha512-Knofe2cAURWaunECx9HP+darFe6MJ7CaZ0sW/JRgqCOxSDzRDi3hr9Xr4GGHJu0JoDb5+bUOV0J+2kPHbVKyxQ==}
     engines: {node: '>=18'}
     peerDependencies:
       zod: ^3.0.0
@@ -22944,12 +22935,6 @@ snapshots:
       '@ai-sdk/provider-utils': 1.0.22(zod@3.23.8)
       zod: 3.23.8
 
-  '@ai-sdk/mistral@1.1.5(zod@3.23.8)':
-    dependencies:
-      '@ai-sdk/provider': 1.0.6
-      '@ai-sdk/provider-utils': 2.1.5(zod@3.23.8)
-      zod: 3.23.8
-
   '@ai-sdk/openai@1.0.5(zod@3.23.8)':
     dependencies:
       '@ai-sdk/provider': 1.0.1
@@ -41078,7 +41063,7 @@ snapshots:
 
   extract-zip@2.0.1:
     dependencies:
-      debug: 4.3.4
+      debug: 4.4.0(supports-color@5.5.0)
       get-stream: 5.2.0
       yauzl: 2.10.0
     optionalDependencies:
