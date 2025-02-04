@@ -1,7 +1,7 @@
 {
     "name": "ATLAS",
     "clients": [
-        "twitter"
+        "atlas_twitter"
     ],
     "modelProvider": "openai",
     "settings": {

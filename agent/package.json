@@ -33,6 +33,7 @@
         "@elizaos/client-telegram": "workspace:*",
         "@elizaos/client-telegram-account": "workspace:*",
         "@elizaos/client-twitter": "workspace:*",
+        "@elizaos/client-atlas-twitter": "workspace:*",
         "@elizaos/client-instagram": "workspace:*",
         "@elizaos/client-slack": "workspace:*",
         "@elizaos/client-alexa": "workspace:*",

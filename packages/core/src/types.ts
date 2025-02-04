@@ -652,6 +652,7 @@ export enum Clients {
     DISCORD = "discord",
     DIRECT = "direct",
     TWITTER = "twitter",
+    ATLAS_TWITTER = "atlas_twitter",
     TELEGRAM = "telegram",
     TELEGRAM_ACCOUNT = "telegram-account",
     FARCASTER = "farcaster",
