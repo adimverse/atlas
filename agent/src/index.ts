@@ -476,7 +476,6 @@ export async function loadCharacters(
                 );
                 // Add these logs
                 elizaLogger.info("Loading character:", character.name);
-                elizaLogger.info("System Prompt:", character?.system);
 
                 if (character?.system?.startsWith("@import:")) {
                     const promptPath = character.system.replace("@import:", "");
@@ -530,6 +529,7 @@ export async function loadCharacters(
                         elizaLogger.error("Failed to load system prompt from any path");
                     }
                 }
+                elizaLogger.info("System Prompt:", character?.system.slice(0, 100).concat('...'));
                 loadedCharacters.push(character);
             } catch (e) {
                 process.exit(1);
