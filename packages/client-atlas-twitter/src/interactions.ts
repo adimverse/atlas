@@ -95,12 +95,22 @@ Thread of Tweets You Are Replying To:
 # INSTRUCTIONS: Respond with [RESPOND] if {{agentName}} should respond, or [IGNORE] if {{agentName}} should not respond to the last message and [STOP] if {{agentName}} should stop participating in the conversation.
 ` + shouldRespondFooter;
 
+type ReplyContext = {
+  state: any,
+  response: Content,
+  message: any,
+  tweet: Tweet,
+  context: string,
+}
+
 export class TwitterInteractionClient {
     client: ClientBase;
     runtime: IAgentRuntime;
+    replyQueue: ReplyContext[];
     constructor(client: ClientBase, runtime: IAgentRuntime) {
         this.client = client;
         this.runtime = runtime;
+        this.replyQueue = [];
     }
 
     async start() {
@@ -113,6 +123,32 @@ export class TwitterInteractionClient {
             );
         };
         handleTwitterInteractionsLoop();
+        this.replyProcessingLoop();
+    }
+
+    private replyProcessingLoop() {
+      // if replyQueue is longer than TWITTER_RESPONSE_QUEUE_MAX_LENGTH, trim oldest messages from queue until queue is max length
+      this.replyQueue = this.replyQueue.slice(this.replyQueue.length - parseInt(process.env.TWITTER_RESPONSE_QUEUE_MAX_LENGTH) || 100)
+      // acquire the oldest message in the replyQueue
+      const reply = this.replyQueue.shift()
+
+      // Calculate the delay time
+      let replyDelaySeconds: number;
+      if (reply) {
+        elizaLogger.info('Sending Interaction Reply')
+        this.sendReply(reply)
+        const minDelaySeconds = parseInt(process.env.TWITTER_RESPONSE_INTERVAL_MIN) || 1
+        const maxDelaySeconds = parseInt(process.env.TWITTER_RESPONSE_INTERVAL_MAX) || 2
+        replyDelaySeconds = this.replyQueue.length ? Math.floor(Math.random() * (maxDelaySeconds - minDelaySeconds)) + minDelaySeconds : 5
+        elizaLogger.info(`Delaying next reponse: ${replyDelaySeconds} seconds`)
+      } else {
+        replyDelaySeconds = 5
+      }
+
+      // Check again after the delay
+      setTimeout(() => {
+        this.replyProcessingLoop()
+      }, replyDelaySeconds * 1000)
     }
 
     async handleTwitterInteractions() {
@@ -441,76 +477,82 @@ export class TwitterInteractionClient {
         response.text = removeQuotes(response.text);
 
         if (response.text) {
-            try {
-                const callback: HandlerCallback = async (response: Content) => {
-                    // NEW: Skip tweeting if it's a storyteller action
-                    if (response.action === "STORYTELLER") {
-                        // Return dummy memory with the action but don't tweet
-                        return [{
-                            id: stringToUuid(tweet.id + "-" + this.runtime.agentId),
-                            agentId: this.runtime.agentId,
-                            content: {
-                                text: "",  // Empty text since we don't want to tweet
-                                action: "STORYTELLER"  // Preserve the action for processing
-                            },
-                            userId: message.userId,
-                            roomId: message.roomId,
-                            createdAt: Date.now()
-                        }];
-                    }
-                    else
-                    {
-                        const memories = await sendTweet(
-                            this.client,
-                            response,
-                            message.roomId,
-                            this.client.twitterConfig.TWITTER_USERNAME,
-                            tweet.id
-                        );
-                        return memories;
-                    }
-                    
-                };
-
-                const responseMessages = await callback(response);
-
-                state = (await this.runtime.updateRecentMessageState(
-                    state
-                )) as State;
-
-                for (const responseMessage of responseMessages) {
-                    if (
-                        responseMessage ===
-                        responseMessages[responseMessages.length - 1]
-                    ) {
-                        responseMessage.content.action = response.action;
-                    } else {
-                        responseMessage.content.action = "CONTINUE";
-                    }
-                    await this.runtime.messageManager.createMemory(
-                        responseMessage
-                    );
-                }
-
-                await this.runtime.processActions(
-                    message,
-                    responseMessages,
-                    state,
-                    callback
-                );
-
-                const responseInfo = `Context:\n\n${context}\n\nSelected Post: ${tweet.id} - ${tweet.username}: ${tweet.text}\nAgent's Output:\n${response.text}`;
-
-                await this.runtime.cacheManager.set(
-                    `twitter/tweet_generation_${tweet.id}.txt`,
-                    responseInfo
-                );
-                await wait();
-            } catch (error) {
-                elizaLogger.error(`Error sending response tweet: ${error}`);
-            }
+          // Reply has been created, add it to the replyQueue with all necessary context to be replied to asynchronously
+          this.replyQueue.push({ state, response, message, tweet, context })
         }
     }
+
+    private async sendReply({ state, response, message, tweet, context }: ReplyContext) {
+      try {
+        const callback: HandlerCallback = async (response: Content) => {
+            // NEW: Skip tweeting if it's a storyteller action
+            if (response.action === "STORYTELLER") {
+                // Return dummy memory with the action but don't tweet
+                return [{
+                    id: stringToUuid(tweet.id + "-" + this.runtime.agentId),
+                    agentId: this.runtime.agentId,
+                    content: {
+                        text: "",  // Empty text since we don't want to tweet
+                        action: "STORYTELLER"  // Preserve the action for processing
+                    },
+                    userId: message.userId,
+                    roomId: message.roomId,
+                    createdAt: Date.now()
+                }];
+            }
+            else
+            {
+                const memories = await sendTweet(
+                    this.client,
+                    response,
+                    message.roomId,
+                    this.client.twitterConfig.TWITTER_USERNAME,
+                    tweet.id
+                );
+                return memories;
+            }
+            
+        };
+
+        const responseMessages = await callback(response);
+
+        state = (await this.runtime.updateRecentMessageState(
+            state
+        )) as State;
+
+        for (const responseMessage of responseMessages) {
+            if (
+                responseMessage ===
+                responseMessages[responseMessages.length - 1]
+            ) {
+                responseMessage.content.action = response.action;
+            } else {
+                responseMessage.content.action = "CONTINUE";
+            }
+            await this.runtime.messageManager.createMemory(
+                responseMessage
+            );
+        }
+
+        await this.runtime.processActions(
+            message,
+            responseMessages,
+            state,
+            callback
+        );
+
+        const responseInfo = `Context:\n\n${context}\n\nSelected Post: ${tweet.id} - ${tweet.username}: ${tweet.text}\nAgent's Output:\n${response.text}`;
+
+        await this.runtime.cacheManager.set(
+            `twitter/tweet_generation_${tweet.id}.txt`,
+            responseInfo
+        );
+        await wait();
+      } catch (error) {
+          elizaLogger.error(`Error sending response tweet: ${error}`);
+      }
+    }
+
 
     async buildConversationThread(
         tweet: Tweet,
