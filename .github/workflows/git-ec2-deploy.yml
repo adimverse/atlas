@@ -16,30 +16,47 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" | tr -d '\r' > .env
 
-      - name: Copy .env file to EC2 Instance
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USERNAME }}
-          key: ${{ secrets.EC2_PRIVATE_KEY }}
-          source: .env
-          target: /home/${{ secrets.EC2_USERNAME }}/eliza/
-          use_insecure_cipher: true
-          overwrite: true
+      # - name: Copy .env file to EC2 Instance
+      #   uses: appleboy/scp-action@v0.1.7
+      #   with:
+      #     host: ${{ secrets.EC2_HOST }}
+      #     username: ${{ secrets.EC2_USERNAME }}
+      #     key: ${{ secrets.EC2_PRIVATE_KEY }}
+      #     source: .env
+      #     target: /home/${{ secrets.EC2_USERNAME }}/eliza/
+      #     use_insecure_cipher: true
+      #     overwrite: true
 
-      - name: Deploy to EC2 instance
+      - name: Debug SSH Environment
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           script: |
-            sudo systemctl stop atlas-agent
-            cd ~/eliza
-            git checkout .
-            git clean -fd
-            git checkout feature/ec2-git-deploy
-            git pull
-            pnpm i
-            pnpm build
-            sudo systemctl start atlas-agent
+            echo "Current shell: $SHELL"
+            echo "User: $(whoami)"
+            echo "Home directory: $HOME"
+            echo "PATH: $PATH"
+            which pnpm
+            /home/ubuntu/.nvm/versions/node/v23.3.0/bin/pnpm
+   
+
+      # - name: Deploy to EC2 instance
+      #   uses: appleboy/ssh-action@master
+      #   with:
+      #     host: ${{ secrets.EC2_HOST }}
+      #     username: ${{ secrets.EC2_USERNAME }}
+      #     key: ${{ secrets.EC2_PRIVATE_KEY }}
+      #     script: |
+      #       zsh -c '
+      #         sudo systemctl stop atlas-agent
+      #         cd ~/eliza
+      #         git checkout .
+      #         git clean -fd
+      #         git checkout feature/ec2-git-deploy
+      #         git pull
+      #         pnpm i
+      #         pnpm build
+      #         sudo systemctl start atlas-agent
+      #       '
