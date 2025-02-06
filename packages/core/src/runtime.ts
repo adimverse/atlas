@@ -478,10 +478,6 @@ export class AgentRuntime implements IAgentRuntime {
             elizaLogger.info(
                 `[RAG Check] RAG Knowledge enabled: ${this.character.settings.ragKnowledge ? true : false}`,
             );
-            elizaLogger.info(
-                `[RAG Check] Knowledge items:`,
-                this.character.knowledge,
-            );
 
             if (this.character.settings.ragKnowledge) {
                 // Type guards with logging for each knowledge type
