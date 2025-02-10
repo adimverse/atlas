@@ -7,7 +7,8 @@ import elizaLogger from "./logger.ts";
 
 async function get(
     runtime: AgentRuntime,
-    message: Memory
+    message: Memory,
+    count = 5,
 ): Promise<KnowledgeItem[]> {
     // Add validation for message
     if (!message?.content?.text) {
@@ -37,7 +38,7 @@ async function get(
         embedding,
         {
             roomId: message.agentId,
-            count: 5,
+            count,
             match_threshold: 0.1,
         }
     );
@@ -102,7 +103,44 @@ async function set(
     }
 }
 
+async function getFragments(
+  runtime: AgentRuntime,
+  message: Memory,
+  count = 5
+): Promise<KnowledgeItem[]> {
+  if (!message?.content?.text) {
+      elizaLogger.warn("Invalid message for knowledge query");
+      return [];
+  }
+
+  const processed = preprocess(message.content.text);
+  const embedding = await embed(runtime, processed);
+
+  // Get the fragments directly
+  const fragments = await runtime.knowledgeManager.searchMemoriesByEmbedding(
+      embedding,
+      {
+          roomId: message.agentId,
+          count,
+          match_threshold: 0.1,
+      }
+  );
+
+  // Return the fragments as KnowledgeItems
+  return fragments.map(fragment => ({
+      id: fragment.id,
+      content: {
+          text: fragment.content.text,
+          type: 'text'
+      }
+  }));
+}
+
 export function preprocess(content: string): string {
+    if (!content || typeof content !== 'string') {
+      elizaLogger.warn("Invalid input to preprocess", { content });
+      return '';
+    }
     elizaLogger.debug("Preprocessing text:", {
         input: content,
         length: content?.length,
@@ -149,6 +187,7 @@ export function preprocess(content: string): string {
 
 export default {
     get,
+    getFragments,
     set,
     preprocess,
 };

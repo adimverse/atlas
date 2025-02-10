@@ -12,6 +12,7 @@ import { SlackClientInterface } from "@elizaos/client-slack";
 import { TelegramClientInterface } from "@elizaos/client-telegram";
 import { TelegramAccountClientInterface } from "@elizaos/client-telegram-account";
 import { TwitterClientInterface } from "@elizaos/client-twitter";
+import { AtlasTwitterClientInterface } from "@elizaos/client-atlas-twitter";
 import { AlexaClientInterface } from "@elizaos/client-alexa";
 import { MongoDBDatabaseAdapter } from "@elizaos/adapter-mongodb";
 import { DevaClientInterface } from "@elizaos/client-deva";
@@ -136,7 +137,6 @@ import { holdstationPlugin } from "@elizaos/plugin-holdstation";
 import { nvidiaNimPlugin } from "@elizaos/plugin-nvidia-nim";
 import { zxPlugin } from "@elizaos/plugin-0x";
 import { hyperbolicPlugin } from "@elizaos/plugin-hyperbolic";
-import { litPlugin } from "@elizaos/plugin-lit";
 import Database from "better-sqlite3";
 import fs from "fs";
 import net from "net";
@@ -156,6 +156,7 @@ import { ankrPlugin } from "@elizaos/plugin-ankr";
 import { formPlugin } from "@elizaos/plugin-form";
 import { MongoClient } from "mongodb";
 import { quickIntelPlugin } from "@elizaos/plugin-quick-intel";
+import { storytellerPlugin } from "@elizaos/plugin-storyteller";
 
 import { trikonPlugin } from "@elizaos/plugin-trikon";
 import arbitragePlugin from "@elizaos/plugin-arbitrage";
@@ -239,6 +240,16 @@ function mergeCharacters(base: Character, child: Character): Character {
 function isAllStrings(arr: unknown[]): boolean {
     return Array.isArray(arr) && arr.every((item) => typeof item === "string");
 }
+
+function cleanSystemPrompt(prompt: string): string {
+  return prompt
+      .replace(/\\"/g, '"')  // Replace escaped quotes with regular quotes
+      .replace(/^["']|["']$/g, '')  // Remove wrapping quotes
+      .replace(/\\n/g, '\n')  // Replace escaped newlines
+      .replace(/\s+/g, ' ')  // Normalize whitespace
+      .trim();
+}
+
 export async function loadCharacterFromOnchain(): Promise<Character[]> {
     const jsonText = onchainJson;
 
@@ -287,6 +298,7 @@ export async function loadCharacterFromOnchain(): Promise<Character[]> {
         elizaLogger.info(
             `Successfully loaded character from: ${process.env.IQ_WALLET_ADDRESS}`
         );
+
         return loadedCharacters;
     } catch (e) {
         elizaLogger.error(
@@ -462,6 +474,62 @@ export async function loadCharacters(
                 const character: Character = await loadCharacterTryPath(
                     characterPath
                 );
+                // Add these logs
+                elizaLogger.info("Loading character:", character.name);
+
+                if (character?.system?.startsWith("@import:")) {
+                    const promptPath = character.system.replace("@import:", "");
+                    const pathsToTry = [
+                        path.resolve(process.cwd(), promptPath + '.txt'),
+                        path.resolve(process.cwd(), promptPath + '.js'),
+                        path.resolve(__dirname, '../../characters', promptPath + '.txt'),
+                        path.resolve(__dirname, '../../characters', promptPath + '.js'),
+                    ];
+
+                    elizaLogger.info("Trying paths:", pathsToTry.map(p => ({
+                        path: p,
+                        exists: fs.existsSync(p)
+                    })));
+
+                    let imported = false;
+                    for (const tryPath of pathsToTry) {
+                        try {
+                            if (fs.existsSync(tryPath)) {
+                                const content = fs.readFileSync(tryPath, 'utf8');
+
+                                if (tryPath.endsWith('.js')) {
+                                    const match = content.match(/export const atlasSystemPrompt = "([\s\S]*)"/);
+                                    if (match && match[1]) {
+                                        character.system = cleanSystemPrompt(match[1]);
+                                        elizaLogger.info("Successfully loaded system prompt from:", tryPath);
+                                        elizaLogger.info("Prompt content:", character.system.substring(0, 100) + "...");
+                                        imported = true;
+                                        break;
+                                    } else {
+                                        elizaLogger.error("Failed to extract prompt from JS content:", content.substring(0, 100) + "...");
+                                    }
+                                } else if (tryPath.endsWith('.txt')) {
+                                    // For .txt files, use the content directly
+                                    //character.system = content.trim(); // Added trim() to remove any extra whitespace
+                                    character.system = cleanSystemPrompt(content);
+
+                                    elizaLogger.info("Successfully loaded system prompt from:", tryPath);
+                                    elizaLogger.info("Prompt content:", character.system.substring(0, 100) + "...");
+                                    imported = true;
+                                    break;
+                                }
+                            }
+                        } catch (error) {
+                            elizaLogger.error("Load attempt failed for path:", tryPath);
+                            elizaLogger.error("Error details:", error);
+                        }
+                    }
+
+                    if (!imported) {
+                        elizaLogger.error("Failed to load system prompt from any path");
+                    }
+                }
+                elizaLogger.info("System Prompt:", character?.system.slice(0, 100).concat('...'));
                 loadedCharacters.push(character);
             } catch (e) {
                 process.exit(1);
@@ -835,6 +903,11 @@ export async function initializeClients(
         }
     }
 
+    if (clientTypes.includes(Clients.ATLAS_TWITTER)) {
+      const atlasTwitterClient = await AtlasTwitterClientInterface.start(runtime);
+      if (atlasTwitterClient) clients.atlas_twitter = atlasTwitterClient;
+    }
+
     if (clientTypes.includes(Clients.ALEXA)) {
         const alexaClient = await AlexaClientInterface.start(runtime);
         if (alexaClient) {
@@ -1017,6 +1090,7 @@ export async function createAgent(
         character,
         // character.plugins are handled when clients are added
         plugins: [
+            storytellerPlugin,
             parseBooleanFromText(getSecret(character, "BITMIND")) &&
             getSecret(character, "BITMIND_API_TOKEN")
                 ? bittensorPlugin
