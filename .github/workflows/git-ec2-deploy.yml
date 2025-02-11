@@ -25,7 +25,7 @@ jobs:
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
           source: .env
-          target: /home/${{ secrets.EC2_USERNAME }}/.env
+          target: /home/${{ secrets.EC2_USERNAME }}/eliza/
 
       - name: Deploy to EC2 instance
         uses: appleboy/ssh-action@master
