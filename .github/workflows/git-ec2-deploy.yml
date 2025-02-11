@@ -14,7 +14,9 @@ jobs:
     steps:
       - name: Setup ENV File
         run: |
-          echo "${{ secrets.ENV_FILE }}" | tr -d '\r' > .env
+          cat << 'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
 
       - name: Copy .env file to EC2 Instance
         uses: appleboy/scp-action@v0.1.7
