@@ -1,5 +1,6 @@
 import bodyParser from "body-parser";
 import cors from "cors";
+import { makeApiKeyAuthMiddleware } from "./middleware/apiKeyAuth.ts"
 import express, { type Request as ExpressRequest } from "express";
 import multer from "multer";
 import { z } from "zod";
@@ -120,6 +121,7 @@ export class DirectClient {
         elizaLogger.log("DirectClient constructor");
         this.app = express();
         this.app.use(cors());
+        this.app.use(makeApiKeyAuthMiddleware)
         this.agents = new Map();
 
         this.app.use(bodyParser.json());
@@ -149,6 +151,7 @@ export class DirectClient {
         // Update the route handler to use CustomRequest instead of express.Request
         this.app.post(
             "/:agentId/whisper",
+            /* @ts-ignore */
             upload.single("file"),
             async (req: CustomRequest, res: express.Response) => {
                 const audioFile = req.file; // Access the uploaded file using req.file
@@ -191,6 +194,7 @@ export class DirectClient {
 
         this.app.post(
             "/:agentId/message",
+            /* @ts-ignore */
             upload.single("file"),
             async (req: express.Request, res: express.Response) => {
                 const agentId = req.params.agentId;
