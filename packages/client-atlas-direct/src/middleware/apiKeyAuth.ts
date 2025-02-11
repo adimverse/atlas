@@ -7,6 +7,7 @@ export function makeApiKeyAuthMiddleware(req: Request, res: Response, next: Next
     // If no API key is set in the config, skip checking
     if (!apiKey) {
       next()
+      return
     }
 
     // If the provided key does not match, respond with 401 Unauthorized
@@ -16,4 +17,5 @@ export function makeApiKeyAuthMiddleware(req: Request, res: Response, next: Next
     }
 
     next()
+    return
   }
