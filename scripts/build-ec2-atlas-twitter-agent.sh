@@ -20,7 +20,7 @@ git checkout incention-develop
 git pull
 
 # Install dependencies
-pnpm i
+pnpm i --no-frozen-lockfile
 
 # Build the project
 pnpm build
