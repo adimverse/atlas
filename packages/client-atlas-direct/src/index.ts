@@ -22,12 +22,14 @@ import {
     stringToUuid,
     settings,
     type IAgentRuntime,
+    UUID,
+    validateUuid,
 } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
 import * as fs from "fs";
 import * as path from "path";
-import { createVerifiableLogApiRouter } from "./verifiable-log-api.ts";
 import OpenAI from "openai";
+import { randomBytes } from "crypto";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -140,9 +142,6 @@ export class DirectClient {
         const apiRouter = createApiRouter(this.agents, this);
         this.app.use(apiRouter);
 
-        const apiLogRouter = createVerifiableLogApiRouter(this.agents);
-        this.app.use(apiLogRouter);
-
         // Define an interface that extends the Express Request interface
         interface CustomRequest extends ExpressRequest {
             file?: Express.Multer.File;
@@ -192,31 +191,46 @@ export class DirectClient {
             }
         );
 
+        this.app.get("/:agentId/user/:userId/rooms", async (req: express.Request, res: express.Response) => {
+          const agentId = req.params.agentId as UUID
+          const userId = req.params.userId as UUID
+          let runtime = this.agents.get(agentId)
+          if (!userId || !agentId || !runtime) {
+            res.status(404).send("Missing required params.")
+            return
+          }
+          const rooms = await runtime.databaseAdapter.getRoomsForParticipant(userId)
+          res.json(rooms)
+        })
+
+        this.app.get("/:agentId/rooms/:roomId/memories", async (req: express.Request, res: express.Response) => {
+          const roomId = req.params.roomId as UUID
+          const agentId = req.params.agentId as UUID
+          let runtime = this.agents.get(agentId)
+          if (!roomId || !agentId || !runtime) {
+            res.status(404).send("Missing required params.")
+            return
+          }
+          const memories = await runtime.messageManager.getMemoriesByRoomIds({ roomIds: [roomId]})
+          res.json(memories)
+        })
+
         this.app.post(
             "/:agentId/message",
             /* @ts-ignore */
             upload.single("file"),
             async (req: express.Request, res: express.Response) => {
-                const agentId = req.params.agentId;
-                const roomId = stringToUuid(
-                    req.body.roomId ?? "default-room-" + agentId
-                );
-                const userId = stringToUuid(req.body.userId ?? "user");
-
+                const agentId = req.params.agentId as UUID
+                const userId = req.body.userId as UUID
+                let roomId = req.body.roomId as UUID
                 let runtime = this.agents.get(agentId);
-
-                // if runtime is null, look for runtime with the same name
-                if (!runtime) {
-                    runtime = Array.from(this.agents.values()).find(
-                        (a) =>
-                            a.character.name.toLowerCase() ===
-                            agentId.toLowerCase()
-                    );
+                if (!agentId || !runtime || !userId || !(roomId && validateUuid(roomId))) {
+                    res.status(404).send("Missing or invalid params.");
+                    return;
                 }
 
-                if (!runtime) {
-                    res.status(404).send("Agent not found");
-                    return;
+                if (!roomId ) {
+                  roomId = stringToUuid(randomBytes(Math.ceil(32 / 2)).toString('hex').slice(0, 32))
                 }
 
                 await runtime.ensureConnection(
@@ -296,6 +310,8 @@ export class DirectClient {
                     context,
                     modelClass: ModelClass.LARGE,
                 });
+                response.roomId = roomId
+                response.userId = userId
 
                 if (!response) {
                     res.status(500).send(
