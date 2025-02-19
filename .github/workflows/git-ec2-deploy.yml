@@ -18,6 +18,15 @@ jobs:
           ${{ secrets.ENV_FILE }}
           EOF
 
+      - name: Copy EC2 build script
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_PRIVATE_KEY }}
+          source: ./scripts/build-ec2-atlas-twitter-agent.sh
+          target: /home/${{ secrets.EC2_USERNAME }}/
+
       - name: Copy .env file to EC2 Instance
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -33,4 +42,4 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
-          script: source ~/.zshrc && zsh ~/build_atlas_agent.sh
+          script: source ~/.zshrc && zsh ~/build-ec2-atlas-twitter-agent.sh
