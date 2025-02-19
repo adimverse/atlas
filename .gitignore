@@ -2,9 +2,7 @@ node_modules
 /out
 
 .env
-.env.production
-.env.development
-.env.local
+.env.*
 .env_main
 concatenated-output.ts
 embedding-cache.json
