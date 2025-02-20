@@ -5,7 +5,7 @@ set -e  # Exit immediately if a command exits with a non-zero status
 source ~/.zshrc
 
 # Stop the service
-sudo systemctl stop atlas-twitter-agent
+sudo systemctl stop atlas-direct-agent
 
 # Navigate to project directory
 cd ~/atlas || exit
@@ -26,6 +26,6 @@ pnpm i --no-frozen-lockfile
 pnpm build
 
 # Restart the service
-sudo systemctl start atlas-twitter-agent
+sudo systemctl start atlas-direct-agent
 
 echo "Deployment complete!"

@@ -1,21 +1,21 @@
-name: Git EC2 Deploy
+name: Git EC2 Direct Deploy
 
 on:
   # push:
   #   branches:
-  #     - incention-develop
+  #     - develop
   workflow_dispatch:
 
 
 jobs:
   build-and-release:
-    environment: development-twitter
+    environment: development-direct
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           sparse-checkout: |
-            scripts/build-ec2-atlas-twitter-agent.sh
+            scripts/build-ec2-atlas-agent.sh
           sparse-checkout-cone-mode: false
 
       - name: Setup ENV File
@@ -30,7 +30,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
-          source: scripts/build-ec2-atlas-twitter-agent.sh
+          source: scripts/build-ec2-atlas-agent.sh
           target: /home/${{ secrets.EC2_USERNAME }}/
 
       - name: Copy .env file to EC2 Instance
@@ -48,4 +48,4 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_PRIVATE_KEY }}
-          script: source ~/.zshrc && zsh ~/scripts/build-ec2-atlas-twitter-agent.sh
+          script: source ~/.zshrc && zsh ~/scripts/build-ec2-atlas-agent.sh
