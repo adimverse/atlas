@@ -1,0 +1,15 @@
+[Unit]
+Description=Atlas Agent
+After=network.target
+
+[Service]
+ExecStart=/bin/bash -c "/home/ubuntu/.local/share/pnpm/pnpm start --character='atlas.character.twitter.json'"
+WorkingDirectory=/home/ubuntu/atlas
+Restart=always
+User=ubuntu
+Group=ubuntu
+Environment="PATH=/home/ubuntu/.nvm/versions/node/v23.3.0/bin/:/home/ubuntu/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin"
+SyslogIdentifier=atlas-agent
+
+[Install]
+WantedBy=multi-user.target
