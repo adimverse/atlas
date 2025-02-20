@@ -8,7 +8,7 @@ source ~/.zshrc
 sudo systemctl stop atlas-agent
 
 # Navigate to project directory
-cd ~/eliza || exit
+cd ~/atlas || exit
 
 # Reset any local changes
 git checkout .
