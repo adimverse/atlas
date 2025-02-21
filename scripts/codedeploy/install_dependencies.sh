@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euxo pipefail
 
-zsh
+source ~/.profile
+source ~/.zshrc
+
+cd ~/atlas
 
 # Install dependencies
-cd ~/atlas
-sudo /home/ubuntu/.local/share/pnpm/pnpm i --no-frozen-lockfile
+zsh -c "pnpm i --no-frozen-lockfile && pnpm build"
