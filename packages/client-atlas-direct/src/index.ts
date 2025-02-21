@@ -185,7 +185,7 @@ export class DirectClient {
                 const userId = req.body.userId as UUID
                 let roomId = req.body.roomId as UUID
                 let runtime = this.agents.get(agentId);
-                if (!agentId || !runtime || !userId || !(roomId && validateUuid(roomId))) {
+                if (!agentId || !runtime || !userId || roomId ? !validateUuid(roomId) : false) {
                     res.status(404).send("Missing or invalid params.");
                     return;
                 }
