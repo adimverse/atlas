@@ -245,7 +245,7 @@ function cleanSystemPrompt(prompt: string): string {
   return prompt
       .replace(/\\"/g, '"')  // Replace escaped quotes with regular quotes
       .replace(/^["']|["']$/g, '')  // Remove wrapping quotes
-      .replace(/\\n/g, '\n')  // Replace escaped newlines
+      // .replace(/\\n/g, '\n')  // Replace escaped newlines
       .replace(/\s+/g, ' ')  // Normalize whitespace
       .trim();
 }
