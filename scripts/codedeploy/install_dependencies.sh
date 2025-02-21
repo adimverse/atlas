@@ -2,7 +2,6 @@
 set -euxo pipefail
 
 source ~/.profile
-source ~/.zshrc
 
 cd ~/atlas
 
