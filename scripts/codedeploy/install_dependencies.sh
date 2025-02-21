@@ -6,5 +6,5 @@ export PATH="/home/ubuntu/.local/share/pnpm:/home/ubuntu/.nvm/versions/node/v23.
 cd ~/atlas
 
 # Install dependencies
-pnpm i --no-frozen-lockfile
-pnpm build
+sudo pnpm i --no-frozen-lockfile
+sudo pnpm build
