@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euxo pipefail
 
-source ~/.zshrc
+zsh
 
 # Install dependencies
 cd ~/atlas
