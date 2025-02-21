@@ -18,8 +18,6 @@ export const storytellerPlugin: Plugin = {
     description: "Agent storyteller with basic actions and evaluators",
     actions: [
         storytellerAction,
-        queryArchiveAction
-        
     ],
     evaluators: [factEvaluator, goalEvaluator],
     providers: [boredomProvider, timeProvider, factsProvider, storytellerProvider],
