@@ -4,5 +4,5 @@ set -euxo pipefail
 cd ~/atlas
 
 # Install dependencies
-pnpm i --no-frozen-lockfile
-pnpm build
+sudo pnpm i --no-frozen-lockfile
+sudo pnpm build
