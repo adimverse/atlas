@@ -4,6 +4,7 @@ os: linux
 files:
   - source: /
     destination: /home/ec2-user/atlas
+    overwrite: true
 
 hooks:
   BeforeInstall:
