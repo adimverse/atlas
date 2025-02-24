@@ -18,11 +18,27 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
       - name: Setup ENV File
         run: |
           cat << 'EOF' > .env
           ${{ secrets.ENV_FILE }}
           EOF
+
+      - name: Build Project
+        run: pnpm build
 
       - name: Package repo
         run: |
