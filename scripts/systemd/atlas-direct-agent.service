@@ -3,12 +3,11 @@ Description=Atlas Direct Agent
 After=network.target
 
 [Service]
-ExecStart=/bin/bash -c "/home/ubuntu/.local/share/pnpm/pnpm start --character='atlas.character.direct.json'"
-WorkingDirectory=/home/ubuntu/atlas
+ExecStart=/bin/bash -c "pnpm start --character=atlas.character.direct.json"
+WorkingDirectory=/home/ec2-user/atlas
 Restart=always
-User=ubuntu
-Group=ubuntu
-Environment="PATH=/home/ubuntu/.nvm/versions/node/v23.3.0/bin/:/home/ubuntu/.local/share/pnpm:/usr/local/bin:/usr/bin:/bin"
+User=ec2-user
+Group=ec2-user
 SyslogIdentifier=atlas-direct-agent
 
 [Install]
