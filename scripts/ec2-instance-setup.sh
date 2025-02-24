@@ -26,13 +26,15 @@ sed s/robbyrussell/alanpeabody/ ~/.zshrc > ~/.zshrc
 
 # Install NVM
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+nvm alias default 23.3.0
+nvm use
 
 # Install pnpm globally
 curl -fsSL https://get.pnpm.io/install.sh | env PNPM_VERSION=9.15.0 sh -
 
 # Install Docker
 sudo apt-get update
-sudo apt-get install -y ca-certificates curl gnupg lsb-release 
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 echo \
