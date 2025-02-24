@@ -24,12 +24,6 @@ jobs:
           ${{ secrets.ENV_FILE }}
           EOF
 
-      - name: Build and package
-        run: |
-          npm install
-          npm run build
-          zip -r deployment.zip .
-
       - name: Package repo
         run: |
           zip -r deployment.zip .
