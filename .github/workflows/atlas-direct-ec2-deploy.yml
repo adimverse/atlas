@@ -36,3 +36,8 @@ jobs:
           aws secretsmanager put-secret-value --secret-id AtlasDirect --secret-string "$env_json"
       
       # TODO: steps that tell EC2 to rollover all instances
+      - name: Refresh EC2 instances in the AutoScalingGroup
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name AtlasDirect \
+            --preferences '{"MinHealthyPercentage": 100}'
