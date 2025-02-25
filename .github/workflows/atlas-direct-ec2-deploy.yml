@@ -1,0 +1,35 @@
+name: Atlas Direct Deploy
+
+on:
+  # push:
+  #   branches:
+  #     - develop
+  workflow_dispatch:
+
+
+jobs:
+  build-and-release:
+    environment: development-direct
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ACTIONS_ROLE_ARN }}
+          role-session-name: atlasdirectdeploysession
+      
+      - name: Setup ENV File
+        run: |
+          cat << 'EOF' > .env
+          ${{ secrets.ENV_FILE }}
+          EOF
+      
+      - name: Upload latest .env file
+        run: |
+          env_json=$(jq -Rs '{EnvFile: .}' .env)
+          aws secretsmanager create-secret --name AtlasDirect --secret-string "{}" || true
+          aws secretsmanager put-secret-value --secret-id AtlasDirect --secret-string "$env_json"
+      
+      # TODO: steps that tell EC2 to rollover all instances
