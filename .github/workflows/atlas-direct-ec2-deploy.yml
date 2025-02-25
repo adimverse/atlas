@@ -1,5 +1,8 @@
 name: Atlas Direct Deploy
 
+permissions:
+  id-token: write      # <---- Required for OIDC integration between GitHub and AWS
+
 on:
   # push:
   #   branches:
