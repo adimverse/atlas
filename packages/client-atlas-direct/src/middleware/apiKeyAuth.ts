@@ -5,7 +5,7 @@ export function makeApiKeyAuthMiddleware(req: Request, res: Response, next: Next
     const requestKey = req.headers["x-api-key"] as string | undefined
 
     // If no API key is set in the config, skip checking
-    if (!apiKey) {
+    if (!apiKey || req.route?.path === '/hello') {
       next()
       return
     }
