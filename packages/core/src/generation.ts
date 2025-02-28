@@ -1600,17 +1600,11 @@ export async function generateMessageResponse({
                 modelClass,
             });
 
-            // try parsing the response as JSON, if null then try with more advanced parsing
-            let parsedContent
-            try {
-              parsedContent = JSON.parse(response) as Content
-            } catch (e: any) {
-              console.log('json parsing error first:', e)
-              parsedContent = parseJSONObjectFromText(response) as Content
-              if (!parsedContent) {
-                  elizaLogger.debug("parsedContent is null, retrying");
-                  continue;
-              }
+            // try parsing the response as JSON, if null then try again
+            const parsedContent = parseJSONObjectFromText(response) as Content;
+            if (!parsedContent) {
+                elizaLogger.debug("parsedContent is null, retrying");
+                continue;
             }
 
             return parsedContent;
