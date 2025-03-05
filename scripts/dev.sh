@@ -74,7 +74,7 @@ if [ ! -d "$PACKAGES_DIR" ]; then
 fi
 
 # List of working folders to watch (relative to $PACKAGES_DIR)
-WORKING_FOLDERS=("client-atlas-direct" "plugin-storyteller" "core")
+WORKING_FOLDERS=("client-atlas-direct" "plugin-storyteller" "client-atlas-twitter" "core")
 
 # Initialize an array to hold package-specific commands
 COMMANDS=()
