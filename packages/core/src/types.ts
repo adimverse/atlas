@@ -12,6 +12,16 @@ export interface Content {
     /** The main text content */
     text: string;
 
+    responseType?: string;
+
+    paths?: object;
+
+    /** Style object */
+    style?: object;
+
+    /** Codex object */
+    codex?: object;
+
     /** Optional action associated with the message */
     action?: string;
 
