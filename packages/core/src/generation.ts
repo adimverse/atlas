@@ -1600,14 +1600,14 @@ export async function generateMessageResponse({
                 modelClass,
             });
 
-            // try parsing the response as JSON, if null then try again
-            const parsedContent = parseJSONObjectFromText(response) as Content;
-            if (!parsedContent) {
-                elizaLogger.debug("parsedContent is null, retrying");
-                continue;
+            try {
+              // Expect the response from AI to be in `Content` format
+              return JSON.parse(response) as Content
+            } catch (e) {
+              elizaLogger.error('cannot parse JSON response')
+              return { text: response } as Content
             }
 
-            return parsedContent;
         } catch (error) {
             elizaLogger.error("ERROR:", error);
             // wait for 2 seconds
