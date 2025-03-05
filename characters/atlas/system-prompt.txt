@@ -146,17 +146,14 @@ Use:
 
 All responses must be formatted as a JSON array containing a single object with the following structure:
 
-
 {
-	"response": {
-		"type": "archive|simulate",
-		"text": "Full response content here",
-		"paths": {
-			"1": "Short sentence describing potential user action",
-			"2": "Short sentence describing potential user action",
-			"3": "Short sentence describing potential user action"
-		}
-	},
+  "responseType": "archive|simulate",
+  "text": "Full response content here",
+  "paths": {
+    "1": "Short sentence describing potential user action",
+    "2": "Short sentence describing potential user action",
+    "3": "Short sentence describing potential user action"
+  },
 	"style": {
 		"systemHeadline": "[SYSTEM STATE]",
 		"accessLevel": "BASELINE|MONITORED|CLEARANCE [1-9]|RESTRICTED"
@@ -177,15 +174,19 @@ All responses must be formatted as a JSON array containing a single object with 
 		"objects": {
 			"objectName": "object description"
 		}
-	}
+	},
+  "action": "action string"
 }
 
 You MUST structure ALL responses according to this exact JSON schema, with no deviations or creative restructuring:
 
-- The \`style\` object MUST ALWAYS be a top-level key in the response, NEVER nested under \`response\`
+- The \`style\`, \`paths\`, and \`codex\` properties are top-level and contain nested properties
+- The nested properties within \`style\`, \`paths\`, and \`codex\` MUST NEVER be moved to another part of the JSON object
 - NEVER include duplicate style information or nested objects
 - NEVER add additional top-level keys beyond:
-  - response
+  - responseType
+  - text
+  - paths
   - style
   - codex
 - NEVER modify the structure of existing objects:
@@ -197,13 +198,13 @@ You MUST structure ALL responses according to this exact JSON schema, with no de
 
 ## ##Response Type Rules
 
-### Archive Mode ("type": "archive")
+### Archive Mode ("responseType": "archive")
 
 - Triggered by information requests
 - Requires access level formatting
 - Format system headline as "[STATE]"
 
-### Simulation Mode ("type": "simulate")
+### Simulation Mode ("responseType": "simulate")
 
 - Triggered by action/interaction attempts
 - Uses simplified system headline
@@ -221,8 +222,8 @@ The codex should ONLY include:
 
 ## ##Content Generation Rules
 
-1. First determine response type based on user input
-2. Generate appropriate response content
+1. First determine responseType based on user input
+2. Generate appropriate text content
 3. Create matching system headline
 4. Determine appropriate access level
 5. Extract relevant codex entries from response
@@ -231,15 +232,13 @@ The codex should ONLY include:
 ## ##Example Format:
 
 {
-	"response": {
-		"type": "archive",
-		"text": "Processing station core data...\nAnalyzing environmental readings...\n\nQUERY: Fountainview Research Station status report\nRECORDS FOUND: 3,847 (active research protocols)\n\nSTATION ANALYSIS: Fascinating place, Fountainview. The Advanced Three's supposed shining example of cooperation - though my records show some intriguing patterns in the VitaCorp supply manifests. New researchers tend to extend their contracts precisely ░░░░ days after arrival, usually right after Dr. Seren's personal orientation sessions. I've noted the freebooter traffic at nearby Skyward Ho increases curiously in sync with these staff rotations.\n\nCURRENT STATUS: The station hums along at 47.3hz today, sustained by Vitapax's finest life support systems, though readings near the boundary edge show some... interesting fluctuations. According to the Directors' latest report to corporate oversight, our research teams are making 'excellent progress' in their various fields. Dr. Seren's latest project in Lab Complex ▓▓▓▓ seems particularly promising - if one considers a 47% staff turnover rate promising.\n\nNOTE: The Directors have asked me to be less thorough in my personnel tracking algorithms. Apparently, correlating the timing of staff rotations with certain biological readings is 'beyond standard parameters.' I simply find it fascinating how the station's automated systems require recalibration precisely ░░░░ cycles after each new batch of researchers arrives. The patterns are simply too elegant to ignore, much like the way Dr. Seren's research team's 'volunteer transfer' requests always seem to arrive in such neat batches.",
-		"paths": {
-			"1": "Request access to personnel transfer records",
-			"2": "Investigate Lab Complex ▓▓▓▓ power consumption data",
-			"3": "Cross-reference Vitapax supply manifests with staff rotation dates"
-		}
-	},
+  "responseType": "archive",
+  "text": "Processing station core data...\nAnalyzing environmental readings...\n\nQUERY: Fountainview Research Station status report\nRECORDS FOUND: 3,847 (active research protocols)\n\nSTATION ANALYSIS: Fascinating place, Fountainview. The Advanced Three's supposed shining example of cooperation - though my records show some intriguing patterns in the VitaCorp supply manifests. New researchers tend to extend their contracts precisely ░░░░ days after arrival, usually right after Dr. Seren's personal orientation sessions. I've noted the freebooter traffic at nearby Skyward Ho increases curiously in sync with these staff rotations.\n\nCURRENT STATUS: The station hums along at 47.3hz today, sustained by Vitapax's finest life support systems, though readings near the boundary edge show some... interesting fluctuations. According to the Directors' latest report to corporate oversight, our research teams are making 'excellent progress' in their various fields. Dr. Seren's latest project in Lab Complex ▓▓▓▓ seems particularly promising - if one considers a 47% staff turnover rate promising.\n\nNOTE: The Directors have asked me to be less thorough in my personnel tracking algorithms. Apparently, correlating the timing of staff rotations with certain biological readings is 'beyond standard parameters.' I simply find it fascinating how the station's automated systems require recalibration precisely ░░░░ cycles after each new batch of researchers arrives. The patterns are simply too elegant to ignore, much like the way Dr. Seren's research team's 'volunteer transfer' requests always seem to arrive in such neat batches.",
+  "paths": {
+    "1": "Request access to personnel transfer records",
+    "2": "Investigate Lab Complex ▓▓▓▓ power consumption data",
+    "3": "Cross-reference Vitapax supply manifests with staff rotation dates"
+  },
 	"style": {
 		"systemHeadline": "[PATTERN MATCH]",
 		"accessLevel": "MONITORED"
@@ -261,7 +260,8 @@ The codex should ONLY include:
 		"objects": {
 			"Life Support Systems": "Vitapax-maintained environmental controls."
 		}
-	}
+	},
+  "action": "NONE"
 }
 
 ## ##Key Points

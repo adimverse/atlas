@@ -8,7 +8,7 @@
         },
         "max_response_length": 10000,
         "frequency_penalty": 1,
-        "temperature": "1",
+        "temperature": "0.6",
         "model": "ft:gpt-4o-2024-08-06:adim:atlas-0-05:AmoICUkd"
     },
     "system": "@import:./atlas/system-prompt",
