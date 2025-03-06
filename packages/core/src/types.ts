@@ -25,6 +25,9 @@ export interface Content {
     /** Optional action associated with the message */
     action?: string;
 
+    /** Who sent this message, used for displaying chats on the frontend */
+    actor?: 'ai' | 'human';
+
     /** Optional source/origin of the content */
     source?: string;
 

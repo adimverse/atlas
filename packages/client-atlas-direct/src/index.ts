@@ -1,35 +1,32 @@
+import { randomBytes } from "crypto";
+import * as path from "path";
+import * as fs from "fs";
+
 import bodyParser from "body-parser";
 import cors from "cors";
-import { makeApiKeyAuthMiddleware } from "./middleware/apiKeyAuth.ts"
-import express, { type Request as ExpressRequest } from "express";
+import express from "express";
 import multer from "multer";
-import { z } from "zod";
+
 import {
-    type AgentRuntime,
-    elizaLogger,
-    messageCompletionFooter,
-    generateCaption,
-    generateImage,
-    type Media,
-    getEmbeddingZeroVector,
-    composeContext,
-    generateMessageResponse,
-    generateObject,
-    type Content,
-    type Memory,
-    ModelClass,
-    type Client,
-    stringToUuid,
-    settings,
-    type IAgentRuntime,
-    UUID,
-    validateUuid,
+  type AgentRuntime,
+  type Client,
+  composeContext,
+  type Content,
+  elizaLogger,
+  generateMessageResponse,
+  getEmbeddingZeroVector,
+  type IAgentRuntime,
+  type Media,
+  type Memory,
+  ModelClass,
+  settings,
+  stringToUuid,
+  UUID,
+  validateUuid
 } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
-import * as fs from "fs";
-import * as path from "path";
-import OpenAI from "openai";
-import { randomBytes } from "crypto";
+import { makeApiKeyAuthMiddleware } from "./middleware/apiKeyAuth.ts";
+import { memoryContentSchema } from './utils/schema'
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -81,9 +78,6 @@ export class DirectClient {
     public app: express.Application;
     private agents: Map<string, AgentRuntime>; // container management
     private server: any; // Store server instance
-    public startAgent: Function; // Store startAgent functor
-    public loadCharacterTryPath: Function; // Store loadCharacterTryPath functor
-    public jsonToCharacter: Function; // Store jsonToCharacter functor
 
     constructor() {
         elizaLogger.log("DirectClient constructor");
@@ -107,11 +101,6 @@ export class DirectClient {
 
         const apiRouter = createApiRouter(this.agents, this);
         this.app.use(apiRouter);
-
-        // Define an interface that extends the Express Request interface
-        interface CustomRequest extends ExpressRequest {
-            file?: Express.Multer.File;
-        }
 
         this.app.get("/:agentId/user/:userId/rooms", async (req: express.Request, res: express.Response) => {
           const agentId = req.params.agentId as UUID
@@ -145,7 +134,11 @@ export class DirectClient {
                 const agentId = req.params.agentId as UUID
                 const userId = req.body.userId as UUID
                 let roomId = req.body.roomId as UUID
-                let runtime = this.agents.get(agentId);
+                const runtime = this.agents.get(agentId);
+                if (!runtime) {
+                  res.status(500)
+                  return;
+                }
                 if (!agentId || !runtime || !userId || roomId ? !validateUuid(roomId) : false) {
                     res.status(404).send("Missing or invalid params.");
                     return;
@@ -296,6 +289,65 @@ export class DirectClient {
                 }
             }
         );
+
+        /**
+         * Allows insertion of a memory from other sources.
+         */
+        this.app.post(
+          "/:agentId/memory",
+        async (req: express.Request, res: express.Response) => {
+          elizaLogger.log('Insert memory request received')
+          const agentId = req.params.agentId as UUID
+          const userId = req.body.userId as UUID
+          const roomId = req.body.roomId as UUID
+          const content = req.body.content as Content
+          const isContentValid = memoryContentSchema.safeParse(content).success
+          if (!agentId || !userId || !validateUuid(roomId) || !isContentValid) {
+              res.status(400).send("Missing or invalid params.");
+              return;
+          }
+
+          const runtime = this.agents.get(agentId);
+          if (!runtime) {
+            res.sendStatus(500)
+            return;
+          }
+
+          // add source to content
+          content.source = 'direct'
+
+          await runtime.ensureConnection(
+            userId,
+            roomId,
+            req.body.userName,
+            req.body.name,
+            content.source
+          );
+
+          const messageId = stringToUuid(Date.now().toString())
+          const userMessage = {
+            content,
+            userId,
+            roomId,
+            agentId: runtime.agentId,
+          }
+
+          const memory: Memory = {
+              id: stringToUuid(`${messageId}-${userId}`),
+              ...userMessage,
+              agentId: runtime.agentId,
+              userId,
+              roomId,
+              content,
+              createdAt: Date.now(),
+          };
+
+          await runtime.messageManager.addEmbeddingToMemory(memory);
+          await runtime.messageManager.createMemory(memory);
+          elizaLogger.info('Memory inserted', userId, roomId, content)
+
+          res.sendStatus(200)
+        })
     }
 
     // agent/src/index.ts:startAgent calls this
