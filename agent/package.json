@@ -22,6 +22,8 @@
         "@elizaos/adapter-sqlite": "workspace:*",
         "@elizaos/client-atlas-direct": "workspace:*",
         "@elizaos/client-atlas-twitter": "workspace:*",
+        "@elizaos/plugin-bootstrap": "workspace:*",
+        "@elizaos/plugin-storyteller": "workspace:*",
         "@elizaos/core": "workspace:*",
         "@elizaos/plugin-node": "workspace:*",
         "@elizaos/plugin-twitter": "workspace:*",
