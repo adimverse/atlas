@@ -99,12 +99,12 @@ for FOLDER in "${WORKING_FOLDERS[@]}"; do
   fi
 done
 
-# Add specific commands for other directories or cases
-if [ -d "./client" ]; then
-  COMMANDS+=("pnpm --dir client dev -- $*")
-else
-  echo "Warning: 'client' directory not found."
-fi
+# # Add specific commands for other directories or cases
+# if [ -d "./client" ]; then
+#   COMMANDS+=("pnpm --dir client dev -- $*")
+# else
+#   echo "Warning: 'client' directory not found."
+# fi
 
 if [ -d "./agent" ]; then
   # Build the watch paths dynamically from WORKING_FOLDERS
