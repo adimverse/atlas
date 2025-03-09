@@ -590,6 +590,12 @@ export interface Room {
     /** Unique identifier */
     id: UUID;
 
+    /** Summary or topic of the room */
+    excerpt: string;
+
+    /** Shows whether a room is deleted or not */
+    active: boolean;
+
     /** Room participants */
     participants: Participant[];
 }
@@ -1097,7 +1103,9 @@ export interface IDatabaseAdapter {
 
     getRoom(roomId: UUID): Promise<UUID | null>;
 
-    createRoom(roomId?: UUID): Promise<UUID>;
+    createRoom(roomId?: UUID, excerpt?: string): Promise<UUID>;
+
+    updateRoom(roomId: UUID, updates: { excerpt?: string, active?: boolean }): Promise<Room>;
 
     removeRoom(roomId: UUID): Promise<void>;
 

@@ -9,6 +9,7 @@ import type {
     RAGKnowledgeItem,
     Participant,
     IDatabaseAdapter,
+    Room,
 } from "./types.ts";
 import { CircuitBreaker } from "./database/CircuitBreaker";
 import { elizaLogger } from "./logger";
@@ -290,11 +291,20 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
     abstract getRoom(roomId: UUID): Promise<UUID | null>;
 
     /**
-     * Creates a new room with an optional specified ID.
+     * Creates a new room with an optional specified ID and initial excerpt topic.
      * @param roomId Optional UUID to assign to the new room.
+     * @param excerpt Optional string to assign as the room's excerpt.
      * @returns A Promise that resolves to the UUID of the created room.
      */
-    abstract createRoom(roomId?: UUID): Promise<UUID>;
+    abstract createRoom(roomId?: UUID, excerpt?: string): Promise<UUID>;
+
+    /**
+     * Updates a room with new properties.
+     * @param roomId UUID to assign to the new room.
+     * @param updates Object with properties to update on the room.
+     * @returns A Promise that resolves to a boolean showing if the update was successful or not.
+     */
+    abstract updateRoom(roomId: UUID, updates: { excerpt?: string, active?: boolean }): Promise<Room>;
 
     /**
      * Removes a specific room from the database.

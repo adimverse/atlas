@@ -1,6 +1,7 @@
 import { randomBytes } from "crypto";
 import * as path from "path";
 import * as fs from "fs";
+import { z } from 'zod';
 
 import bodyParser from "body-parser";
 import cors from "cors";
@@ -26,7 +27,7 @@ import {
 } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
 import { makeApiKeyAuthMiddleware } from "./middleware/apiKeyAuth.ts";
-import { memoryContentSchema } from './utils/schema'
+import { memoryContentSchema, roomUpdateSchema } from './utils/schema'
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -347,6 +348,34 @@ export class DirectClient {
           elizaLogger.info('Memory inserted', userId, roomId, content)
 
           res.sendStatus(200)
+        })
+
+        /**
+         * Allows updating a room with new fields.
+         */
+        this.app.post('/:agentId/rooms/:roomId/update', async (req: express.Request, res: express.Response) => {
+          const agentId = req.params.agentId as UUID
+          const roomId = req.params.roomId as UUID
+          const body = req.body
+          const isBodyValid = roomUpdateSchema.safeParse(body).success
+          if (!z.string().uuid().safeParse(agentId).success || !z.string().uuid().safeParse(roomId).success || !isBodyValid) {
+              res.status(400).send("Missing or invalid params.");
+              return;
+          }
+
+          const runtime = this.agents.get(agentId)
+          if (!runtime) {
+            res.sendStatus(500)
+            return;
+          }
+
+          const result = await runtime.databaseAdapter.updateRoom(roomId, body)
+          if (result) {
+            res.json(result)
+          } else {
+            res.status(404).send('room not found')
+          }
+          return;
         })
     }
 

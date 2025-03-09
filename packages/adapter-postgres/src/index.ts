@@ -19,6 +19,7 @@ import {
     type Memory,
     type Relationship,
     type UUID,
+    Room,
 } from "@elizaos/core";
 import fs from "fs";
 import path from "path";
@@ -785,14 +786,27 @@ export class PostgresDatabaseAdapter
         }, "removeGoal");
     }
 
-    async createRoom(roomId?: UUID): Promise<UUID> {
+    async createRoom(roomId?: UUID, excerpt?: string): Promise<UUID> {
         return this.withDatabase(async () => {
             const newRoomId = roomId || v4();
-            await this.pool.query("INSERT INTO rooms (id) VALUES ($1)", [
+            await this.pool.query("INSERT INTO rooms (id, excerpt, active) VALUES ($1, $2, $3)", [
                 newRoomId,
+                excerpt || "New Chat",
+                true
             ]);
             return newRoomId as UUID;
         }, "createRoom");
+    }
+
+    async updateRoom(roomId: UUID, updates: { excerpt?: string, active?: boolean }): Promise<Room> {
+      return this.withDatabase(async () => {
+        const result = await this.pool.query("UPDATE rooms SET excerpt = COALESCE($2, excerpt), active  = COALESCE($3, active) WHERE id = $1 RETURNING *;", [
+            roomId,
+            updates.excerpt,
+            updates.active
+        ]);
+        return result.rows[0]
+      }, "updateRoom");
     }
 
     async removeRoom(roomId: UUID): Promise<void> {

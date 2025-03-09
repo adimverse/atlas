@@ -48,6 +48,9 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS rooms (
     "id" UUID PRIMARY KEY,
+    "excerpt" TEXT,
+    "active" BOOLEAN,
+    "deletedAt" TIMESTAMPTZ,
     "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -27,3 +27,7 @@ export const memoryContentSchema = z.object({
   attachments: z.array(mediaSchema).optional()
 })
 
+export const roomUpdateSchema = z.object({
+  excerpt: z.string().optional(),
+  action: z.boolean().optional(),
+})
