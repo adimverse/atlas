@@ -19,7 +19,6 @@
     },
     "dependencies": {
         "@elizaos/adapter-postgres": "workspace:*",
-        "@elizaos/adapter-sqlite": "workspace:*",
         "@elizaos/client-atlas-direct": "workspace:*",
         "@elizaos/client-atlas-twitter": "workspace:*",
         "@elizaos/plugin-bootstrap": "workspace:*",
