@@ -316,16 +316,16 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
     /**
      * Retrieves room IDs for which a specific user is a participant.
      * @param userId The UUID of the user.
-     * @returns A Promise that resolves to an array of room IDs.
+     * @returns A Promise that resolves to an array of Rooms.
      */
-    abstract getRoomsForParticipant(userId: UUID): Promise<UUID[]>;
+    abstract getRoomsForParticipant(userId: UUID): Promise<Room[]>;
 
     /**
      * Retrieves room IDs for which specific users are participants.
      * @param userIds An array of UUIDs of the users.
-     * @returns A Promise that resolves to an array of room IDs.
+     * @returns A Promise that resolves to an array of Rooms.
      */
-    abstract getRoomsForParticipants(userIds: UUID[]): Promise<UUID[]>;
+    abstract getRoomsForParticipants(userIds: UUID[]): Promise<Room[]>;
 
     /**
      * Adds a user as a participant to a specific room.

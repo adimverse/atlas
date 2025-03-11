@@ -1349,24 +1349,36 @@ export class PostgresDatabaseAdapter
         }, "removeAllGoals");
     }
 
-    async getRoomsForParticipant(userId: UUID): Promise<UUID[]> {
+    async getRoomsForParticipant(userId: UUID): Promise<Room[]> {
         return this.withDatabase(async () => {
             const { rows } = await this.pool.query(
-                `SELECT "roomId" FROM participants WHERE "userId" = $1`,
+                `SELECT *
+                FROM rooms
+                WHERE id IN (
+                  SELECT "roomId"
+                  FROM participants
+                  WHERE "userId" = $1
+                );`,
                 [userId]
             );
-            return rows.map((row) => row.roomId);
+            return rows;
         }, "getRoomsForParticipant");
     }
 
-    async getRoomsForParticipants(userIds: UUID[]): Promise<UUID[]> {
+    async getRoomsForParticipants(userIds: UUID[]): Promise<Room[]> {
         return this.withDatabase(async () => {
             const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
             const { rows } = await this.pool.query(
-                `SELECT DISTINCT "roomId" FROM participants WHERE "userId" IN (${placeholders})`,
+                `SELECT * 
+                FROM rooms WHERE id IN (
+                  SELECT DISTINCT "roomId" 
+                  FROM participants 
+                  WHERE "userId" 
+                  IN (${placeholders})
+                )`,
                 userIds
             );
-            return rows.map((row) => row.roomId);
+            return rows;
         }, "getRoomsForParticipants");
     }
 

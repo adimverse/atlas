@@ -1109,9 +1109,9 @@ export interface IDatabaseAdapter {
 
     removeRoom(roomId: UUID): Promise<void>;
 
-    getRoomsForParticipant(userId: UUID): Promise<UUID[]>;
+    getRoomsForParticipant(userId: UUID): Promise<Room[]>;
 
-    getRoomsForParticipants(userIds: UUID[]): Promise<UUID[]>;
+    getRoomsForParticipants(userIds: UUID[]): Promise<Room[]>;
 
     addParticipant(userId: UUID, roomId: UUID): Promise<boolean>;
 

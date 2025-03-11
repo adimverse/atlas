@@ -9,6 +9,7 @@ import {
     type Participant,
     type Relationship,
     type UUID,
+    Room,
 } from "../src/types.ts";
 
 class MockDatabaseAdapter extends DatabaseAdapter {
@@ -100,10 +101,10 @@ class MockDatabaseAdapter extends DatabaseAdapter {
     removeRoom(_roomId: UUID): Promise<void> {
         throw new Error("Method not implemented.");
     }
-    getRoomsForParticipant(_userId: UUID): Promise<UUID[]> {
+    getRoomsForParticipant(_userId: UUID): Promise<Room[]> {
         throw new Error("Method not implemented.");
     }
-    getRoomsForParticipants(_userIds: UUID[]): Promise<UUID[]> {
+    getRoomsForParticipants(_userIds: UUID[]): Promise<Room[]> {
         throw new Error("Method not implemented.");
     }
     addParticipant(_userId: UUID, _roomId: UUID): Promise<boolean> {

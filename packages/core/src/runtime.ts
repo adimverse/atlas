@@ -1388,7 +1388,7 @@ Text: ${attachment.text}
             // Check the existing memories in the database
             return this.messageManager.getMemoriesByRoomIds({
                 // filter out the current room id from rooms
-                roomIds: rooms.filter((room) => room !== roomId),
+                roomIds: rooms.filter((room) => room.id !== roomId).map(room => room.id),
                 limit: 20,
             });
         };
