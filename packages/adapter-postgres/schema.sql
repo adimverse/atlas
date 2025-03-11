@@ -48,7 +48,6 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS rooms (
     "id" UUID PRIMARY KEY,
-    "userId" UUID,
     "excerpt" TEXT,
     "active" BOOLEAN DEFAULT TRUE NOT NULL,
     "deletedAt" TIMESTAMPTZ,
