@@ -38,7 +38,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS accounts (
     "id" UUID PRIMARY KEY,
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
     "name" TEXT,
     "username" TEXT,
     "email" TEXT NOT NULL,
@@ -48,10 +48,12 @@ CREATE TABLE IF NOT EXISTS accounts (
 
 CREATE TABLE IF NOT EXISTS rooms (
     "id" UUID PRIMARY KEY,
+    "userId" UUID,
     "excerpt" TEXT,
-    "active" BOOLEAN,
+    "active" BOOLEAN DEFAULT TRUE NOT NULL,
     "deletedAt" TIMESTAMPTZ,
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+    "updatedAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
+    "createdAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP)
 );
 
 DO $$
@@ -64,7 +66,7 @@ BEGIN
         CREATE TABLE IF NOT EXISTS memories (
             "id" UUID PRIMARY KEY,
             "type" TEXT NOT NULL,
-            "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            "createdAt" TIMESTAMPTZ DEFAULT timezone(''UTC'', CURRENT_TIMESTAMP),
             "content" JSONB NOT NULL,
             "embedding" vector(%s),
             "userId" UUID REFERENCES accounts("id"),
@@ -79,7 +81,7 @@ END $$;
 
 CREATE TABLE IF NOT EXISTS  goals (
     "id" UUID PRIMARY KEY,
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
     "userId" UUID REFERENCES accounts("id"),
     "name" TEXT,
     "status" TEXT,
@@ -92,7 +94,7 @@ CREATE TABLE IF NOT EXISTS  goals (
 
 CREATE TABLE IF NOT EXISTS  logs (
     "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
     "userId" UUID NOT NULL REFERENCES accounts("id"),
     "body" JSONB NOT NULL,
     "type" TEXT NOT NULL,
@@ -103,7 +105,7 @@ CREATE TABLE IF NOT EXISTS  logs (
 
 CREATE TABLE IF NOT EXISTS  participants (
     "id" UUID PRIMARY KEY,
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
     "userId" UUID REFERENCES accounts("id"),
     "roomId" UUID REFERENCES rooms("id"),
     "userState" TEXT,
@@ -115,7 +117,7 @@ CREATE TABLE IF NOT EXISTS  participants (
 
 CREATE TABLE IF NOT EXISTS  relationships (
     "id" UUID PRIMARY KEY,
-    "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
     "userA" UUID NOT NULL REFERENCES accounts("id"),
     "userB" UUID NOT NULL REFERENCES accounts("id"),
     "status" TEXT,
@@ -129,7 +131,7 @@ CREATE TABLE IF NOT EXISTS  cache (
     "key" TEXT NOT NULL,
     "agentId" TEXT NOT NULL,
     "value" JSONB DEFAULT '{}'::jsonb,
-    "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
     "expiresAt" TIMESTAMP,
     PRIMARY KEY ("key", "agentId")
 );
@@ -146,7 +148,7 @@ BEGIN
             "agentId" UUID REFERENCES accounts("id"),
             "content" JSONB NOT NULL,
             "embedding" vector(%s),
-            "createdAt" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+            "createdAt" TIMESTAMPTZ DEFAULT timezone(''UTC'', CURRENT_TIMESTAMP),
             "isMain" BOOLEAN DEFAULT FALSE,
             "originalId" UUID REFERENCES knowledge("id"),
             "chunkIndex" INTEGER,
