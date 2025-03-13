@@ -10,9 +10,9 @@ export const PostMessageRouteInputSchema = z.object({
 export type PostMessageRouteInput = z.infer<typeof PostMessageRouteInputSchema>
 
 export const ChatMessageSchema = z.object({
-  id: z.string().uuid(),
+  id: z.string().uuid().optional(),
   sessionId: z.string().uuid(),
-  type: z.union([z.literal('archive'), z.literal('simulate'), z.literal('story')]),
+  type: z.union([z.literal('archive'), z.literal('simulate'), z.literal('story')]).optional(),
   source: z.union([z.literal('ai'), z.literal('human'), z.literal('pending'), z.literal('error')]),
   text: z.string(), 
   version: z.number().optional(),

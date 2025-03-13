@@ -82,14 +82,12 @@ export const storytellerAction: Action = {
                     roomId: message.roomId,
                     userId: runtime.agentId,
                     agentId: runtime.agentId,
-                    createdAt: Date.now(),
                     content: {
                         text: formattedStory,
                         type: 'story',
-                        metadata: {
-                            prompt: message.content.text,
-                            timestamp: Date.now()
-                        }
+                        actor: 'ai',
+                        source: 'direct',
+                        sessionId: message.roomId,
                     }
                 });
                 // Save the story as a tagged memory

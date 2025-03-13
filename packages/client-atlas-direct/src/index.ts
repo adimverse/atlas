@@ -281,6 +281,7 @@ export class DirectClient {
             res.sendStatus(500)
             return;
           }
+          body.message.id = body.message.id || stringToUuid(`${Date.now().toString()}-${body.userId}`);
           const memory = mapPostMemoryToPartialMemory(body, agentId)
 
           await runtime.ensureConnection(
