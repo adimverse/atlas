@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS accounts (
     "createdAt" TIMESTAMPTZ DEFAULT timezone('UTC', CURRENT_TIMESTAMP),
     "name" TEXT,
     "username" TEXT,
-    "email" TEXT NOT NULL,
+    "email" TEXT,
     "avatarUrl" TEXT,
     "details" JSONB DEFAULT '{}'::jsonb
 );
