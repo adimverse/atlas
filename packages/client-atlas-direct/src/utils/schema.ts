@@ -29,7 +29,8 @@ export const PostMemoryRouteInputSchema = z.object({
 })
 export type PostMemoryRouteInput = z.infer<typeof PostMemoryRouteInputSchema>
 
-export const roomUpdateSchema = z.object({
+export const RoomUpdateRouteInputSchema = z.object({
   excerpt: z.string().optional(),
   action: z.boolean().optional(),
 })
+export type RoomUpdateRouteInput = z.infer<typeof RoomUpdateRouteInputSchema>

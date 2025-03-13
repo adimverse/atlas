@@ -27,7 +27,7 @@ import {
 } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
 import { makeApiKeyAuthMiddleware } from "./middleware/apiKeyAuth.ts";
-import { PostMemoryRouteInput, PostMemoryRouteInputSchema, PostMessageRouteInput, PostMessageRouteInputSchema, roomUpdateSchema } from './utils/schema'
+import { PostMemoryRouteInput, PostMemoryRouteInputSchema, PostMessageRouteInput, PostMessageRouteInputSchema, RoomUpdateRouteInputSchema } from './utils/schema'
 import { mapMemoryToChatMessage, mapPostMemoryToPartialMemory } from "./model/ChatMessage.ts";
 
 const storage = multer.diskStorage({
@@ -303,7 +303,7 @@ export class DirectClient {
           const agentId = req.params.agentId as UUID
           const roomId = req.params.roomId as UUID
           const body = req.body
-          const isBodyValid = roomUpdateSchema.safeParse(body).success
+          const isBodyValid = RoomUpdateRouteInputSchema.safeParse(body).success
           if (!z.string().uuid().safeParse(agentId).success || !z.string().uuid().safeParse(roomId).success || !isBodyValid) {
               res.status(400).send("Missing or invalid params.");
               return;
