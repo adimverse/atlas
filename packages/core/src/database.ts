@@ -10,6 +10,7 @@ import type {
     Participant,
     IDatabaseAdapter,
     Room,
+    PaginationParams
 } from "./types.ts";
 import { CircuitBreaker } from "./database/CircuitBreaker";
 import { elizaLogger } from "./logger";
@@ -90,14 +91,14 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
         count?: number;
         unique?: boolean;
         tableName: string;
-    }): Promise<Memory[]>;
+    }, paginationParams?: PaginationParams): Promise<Memory[]>;
 
     abstract getMemoriesByRoomIds(params: {
         agentId: UUID;
         roomIds: UUID[];
         tableName: string;
         limit?: number;
-    }): Promise<Memory[]>;
+    }, paginationParams?: PaginationParams): Promise<Memory[]>;
 
     abstract getMemoryById(id: UUID): Promise<Memory | null>;
 
@@ -318,14 +319,14 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
      * @param userId The UUID of the user.
      * @returns A Promise that resolves to an array of Rooms.
      */
-    abstract getRoomsForParticipant(userId: UUID): Promise<Room[]>;
+    abstract getRoomsForParticipant(userId: UUID, paginationParams?: PaginationParams): Promise<Room[]>;
 
     /**
      * Retrieves room IDs for which specific users are participants.
      * @param userIds An array of UUIDs of the users.
      * @returns A Promise that resolves to an array of Rooms.
      */
-    abstract getRoomsForParticipants(userIds: UUID[]): Promise<Room[]>;
+    abstract getRoomsForParticipants(userIds: UUID[], paginationParams?: PaginationParams): Promise<Room[]>;
 
     /**
      * Adds a user as a participant to a specific room.

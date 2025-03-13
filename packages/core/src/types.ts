@@ -5,6 +5,11 @@ import type { Readable } from "stream";
  */
 export type UUID = `${string}-${string}-${string}-${string}-${string}`;
 
+export type PaginationParams = {
+  offset: string
+  limit: string
+}
+
 /**
  * Represents the content of a message or communication
  */
@@ -1011,7 +1016,7 @@ export interface IDatabaseAdapter {
         agentId: UUID;
         start?: number;
         end?: number;
-    }): Promise<Memory[]>;
+    }, paginationParams?: PaginationParams): Promise<Memory[]>;
 
     getMemoryById(id: UUID): Promise<Memory | null>;
 
@@ -1022,7 +1027,7 @@ export interface IDatabaseAdapter {
         agentId: UUID;
         roomIds: UUID[];
         limit?: number;
-    }): Promise<Memory[]>;
+    }, paginationParams?: PaginationParams): Promise<Memory[]>;
 
     getCachedEmbeddings(params: {
         query_table_name: string;
@@ -1109,9 +1114,9 @@ export interface IDatabaseAdapter {
 
     removeRoom(roomId: UUID): Promise<void>;
 
-    getRoomsForParticipant(userId: UUID): Promise<Room[]>;
+    getRoomsForParticipant(userId: UUID, paginationParams?: PaginationParams): Promise<Room[]>;
 
-    getRoomsForParticipants(userIds: UUID[]): Promise<Room[]>;
+    getRoomsForParticipants(userIds: UUID[], paginationParams?: PaginationParams): Promise<Room[]>;
 
     addParticipant(userId: UUID, roomId: UUID): Promise<boolean>;
 
@@ -1190,7 +1195,7 @@ export interface IMemoryManager {
         unique?: boolean;
         start?: number;
         end?: number;
-    }): Promise<Memory[]>;
+    }, paginationParams?: PaginationParams): Promise<Memory[]>;
 
     getCachedEmbeddings(
         content: string,

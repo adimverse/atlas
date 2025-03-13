@@ -4,6 +4,7 @@ import type {
     IAgentRuntime,
     IMemoryManager,
     Memory,
+    PaginationParams,
     UUID,
 } from "./types.ts";
 
@@ -82,6 +83,8 @@ export class MemoryManager implements IMemoryManager {
      * @param opts.roomId The room ID to retrieve memories for.
      * @param opts.count The number of memories to retrieve.
      * @param opts.unique Whether to retrieve unique memories only.
+     * @param paginationParams.limit Overrides the count and applies a limit
+     * @param paginationParams.offset Sets the offset on returning memories
      * @returns A Promise resolving to an array of Memory objects.
      */
     async getMemories({
@@ -96,7 +99,7 @@ export class MemoryManager implements IMemoryManager {
         unique?: boolean;
         start?: number;
         end?: number;
-    }): Promise<Memory[]> {
+    }, paginationParams: PaginationParams): Promise<Memory[]> {
         return await this.runtime.databaseAdapter.getMemories({
             roomId,
             count,
@@ -105,7 +108,7 @@ export class MemoryManager implements IMemoryManager {
             agentId: this.runtime.agentId,
             start,
             end,
-        });
+        }, paginationParams);
     }
 
     async getCachedEmbeddings(content: string): Promise<

@@ -30,6 +30,7 @@ import type {
     QueryResultRow,
 } from "pg";
 import { fileURLToPath } from "url";
+import { PaginationParams } from "@elizaos/core";
 
 const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
 const __dirname = path.dirname(__filename); // get the name of the directory
@@ -333,7 +334,7 @@ export class PostgresDatabaseAdapter
         agentId?: UUID;
         tableName: string;
         limit?: number;
-    }): Promise<Memory[]> {
+    }, paginationParams: PaginationParams): Promise<Memory[]> {
         return this.withDatabase(async () => {
             if (params.roomIds.length === 0) return [];
             const placeholders = params.roomIds
@@ -350,10 +351,20 @@ export class PostgresDatabaseAdapter
 
             // Add sorting, and conditionally add LIMIT if provided
             query += ` ORDER BY "createdAt" DESC`;
-            if (params.limit) {
-                query += ` LIMIT $${queryParams.length + 1}`;
-                queryParams.push(params.limit.toString());
-            }
+
+            if (paginationParams.limit) {
+              queryParams = [...queryParams, paginationParams.limit]
+              query += ` LIMIT $${queryParams.length}`;
+          } else if (params.limit) {
+              queryParams = [...queryParams, params.limit.toString()]
+              query += ` LIMIT $${queryParams.length}`;
+          }
+
+          // Add offset
+          if (paginationParams.limit && paginationParams.offset) {
+            queryParams = [...queryParams, paginationParams.offset]
+            query += ` OFFSET $${queryParams.length}`
+          }
 
             const { rows } = await this.pool.query(query, queryParams);
             return rows.map((row) => ({
@@ -617,7 +628,7 @@ export class PostgresDatabaseAdapter
         agentId?: UUID;
         start?: number;
         end?: number;
-    }): Promise<Memory[]> {
+    }, paginationParams: PaginationParams): Promise<Memory[]> {
         // Parameter validation
         if (!params.tableName) throw new Error("tableName is required");
         if (!params.roomId) throw new Error("roomId is required");
@@ -655,10 +666,21 @@ export class PostgresDatabaseAdapter
             // Add ordering and limit
             sql += ' ORDER BY "createdAt" DESC';
 
-            if (params.count) {
+            if (paginationParams.limit) {
+                paramCount++;
+                sql += ` LIMIT $${paramCount}`;
+                values.push(paginationParams.limit);
+            } else if (params.count) {
                 paramCount++;
                 sql += ` LIMIT $${paramCount}`;
                 values.push(params.count);
+            }
+
+            // Add offset
+            if (paginationParams.limit && paginationParams.offset) {
+              paramCount++
+              sql += ` OFFSET $${paramCount}`
+              values.push(paginationParams.offset)
             }
 
             elizaLogger.debug("Fetching memories:", {
@@ -677,7 +699,8 @@ export class PostgresDatabaseAdapter
                                   : undefined,
                           }
                         : undefined,
-                limit: params.count,
+                limit: paginationParams.limit || params.count,
+                offset: paginationParams.offset,
             });
 
             const { rows } = await this.pool.query(sql, values);
@@ -1358,36 +1381,56 @@ export class PostgresDatabaseAdapter
         }, "removeAllGoals");
     }
 
-    async getRoomsForParticipant(userId: UUID): Promise<Room[]> {
+    async getRoomsForParticipant(userId: UUID, paginationParams: PaginationParams): Promise<Room[]> {
         return this.withDatabase(async () => {
-            const { rows } = await this.pool.query(
-                `SELECT *
+          let query = `SELECT *
                 FROM rooms
                 WHERE id IN (
                   SELECT "roomId"
                   FROM participants
                   WHERE "userId" = $1
-                );`,
-                [userId]
-            );
-            return rows;
+                )` 
+          let queryParams: string[] = [userId]
+
+          if (paginationParams.limit) {
+            queryParams = [...queryParams, paginationParams.limit]
+            query += ` LIMIT $${queryParams.length}`
+          }
+
+          if (paginationParams.offset) {
+            queryParams = [...queryParams, paginationParams.offset]
+            query += ` OFFSET $${queryParams.length}`
+          }
+
+          const { rows } = await this.pool.query(query, queryParams)
+          return rows;
         }, "getRoomsForParticipant");
     }
 
-    async getRoomsForParticipants(userIds: UUID[]): Promise<Room[]> {
+    async getRoomsForParticipants(userIds: UUID[], paginationParams: PaginationParams): Promise<Room[]> {
         return this.withDatabase(async () => {
             const placeholders = userIds.map((_, i) => `$${i + 1}`).join(", ");
-            const { rows } = await this.pool.query(
-                `SELECT * 
+            let queryParams: string[] = [ ...userIds ]
+            let query = `SELECT * 
                 FROM rooms WHERE id IN (
                   SELECT DISTINCT "roomId" 
                   FROM participants 
                   WHERE "userId" 
                   IN (${placeholders})
-                )`,
-                userIds
-            );
-            return rows;
+                )`
+
+          if (paginationParams.limit) {
+            queryParams = [...queryParams, paginationParams.limit]
+            query += ` LIMIT $${queryParams.length}`
+          }
+
+          if (paginationParams.offset) {
+            queryParams = [...queryParams, paginationParams.offset]
+            query += ` OFFSET $${queryParams.length}`
+          }
+            
+          const { rows } = await this.pool.query(query, queryParams)
+          return rows;
         }, "getRoomsForParticipants");
     }
 

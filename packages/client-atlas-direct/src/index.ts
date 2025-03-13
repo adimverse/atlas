@@ -107,25 +107,36 @@ export class DirectClient {
         this.app.get("/:agentId/user/:userId/rooms", async (req: express.Request, res: express.Response) => {
           const agentId = req.params.agentId as UUID
           const userId = req.params.userId as UUID
+          const limit = req.query.limit ? String(req.query.limit) : '50'
+          const offset = req.query.offset ? String(req.query.offset) : '0'
+ 
           let runtime = this.agents.get(agentId)
           if (!userId || !agentId || !runtime) {
             res.status(404).send("Missing required params.")
             return
           }
-          const rooms = await runtime.databaseAdapter.getRoomsForParticipant(userId)
-          res.json(rooms)
+          // TODO: return total rows
+
+          const roomsList = await runtime.databaseAdapter.getRoomsForParticipant(userId, { limit, offset })
+          res.json(roomsList)
         })
 
         this.app.get("/:agentId/rooms/:roomId/memories", async (req: express.Request, res: express.Response) => {
           const roomId = req.params.roomId as UUID
           const agentId = req.params.agentId as UUID
+          const limit = req.query.limit ? String(req.query.limit) : '50'
+          const offset = req.query.offset ? String(req.query.offset) : '0'
+
           let runtime = this.agents.get(agentId)
           if (!roomId || !agentId || !runtime) {
             res.status(404).send("Missing required params.")
             return
           }
-          const memories = await runtime.messageManager.getMemoriesByRoomIds({ roomIds: [roomId]})
-          res.json(memories.map(mapMemoryToChatMessage))
+          const memoriesList = await runtime.messageManager.getMemories({ roomId: roomId }, { limit, offset })
+
+          // TODO: return total rows
+
+          res.json(memoriesList.map(mapMemoryToChatMessage))
         })
 
         this.app.post(
