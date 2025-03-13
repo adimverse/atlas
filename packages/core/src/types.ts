@@ -12,21 +12,21 @@ export interface Content {
     /** The main text content */
     text: string;
 
-    responseType?: string;
+    responseType?: 'archive' | 'simulate' | 'story';
 
-    paths?: object;
+    paths?: Record<string, string>;
 
     /** Style object */
-    style?: object;
+    style?: Record<string, string>;
 
     /** Codex object */
-    codex?: object;
+    codex?: Record<string, string>;
 
     /** Optional action associated with the message */
     action?: string;
 
     /** Who sent this message, used for displaying chats on the frontend */
-    actor?: 'ai' | 'human';
+    actor?: 'ai' | 'human' | 'pending' | 'error';
 
     /** Optional source/origin of the content */
     source?: string;

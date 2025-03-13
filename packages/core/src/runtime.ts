@@ -1161,10 +1161,10 @@ export class AgentRuntime implements IAgentRuntime {
         if (!account) {
             await this.databaseAdapter.createAccount({
                 id: userId,
-                name: name || this.character.name || "Unknown User",
-                username: userName || this.character.username || "Unknown",
-                email: email || this.character.email || userId, // Temporary
-                details: this.character || { summary: "" },
+                name: name,
+                username: userName,
+                email: email,
+                details: this.character || {},
             });
             elizaLogger.success(`User ${userName} created successfully.`);
         }
@@ -1203,8 +1203,8 @@ export class AgentRuntime implements IAgentRuntime {
             ),
             this.ensureUserExists(
                 userId,
-                userName ?? "User" + userId,
-                userScreenName ?? "User" + userId,
+                userName,
+                userScreenName,
                 source,
             ),
             this.ensureRoomExists(roomId),

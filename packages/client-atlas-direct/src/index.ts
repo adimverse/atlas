@@ -27,7 +27,8 @@ import {
 } from "@elizaos/core";
 import { createApiRouter } from "./api.ts";
 import { makeApiKeyAuthMiddleware } from "./middleware/apiKeyAuth.ts";
-import { memoryContentSchema, roomUpdateSchema } from './utils/schema'
+import { PostMemoryRouteInput, PostMemoryRouteInputSchema, PostMessageRouteInput, PostMessageRouteInputSchema, roomUpdateSchema } from './utils/schema'
+import { mapMemoryToChatMessage, mapPostMemoryToPartialMemory } from "./model/ChatMessage.ts";
 
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -124,7 +125,7 @@ export class DirectClient {
             return
           }
           const memories = await runtime.messageManager.getMemoriesByRoomIds({ roomIds: [roomId]})
-          res.json(memories)
+          res.json(memories.map(mapMemoryToChatMessage))
         })
 
         this.app.post(
@@ -133,86 +134,55 @@ export class DirectClient {
             upload.single("file"),
             async (req: express.Request, res: express.Response) => {
                 const agentId = req.params.agentId as UUID
-                const userId = req.body.userId as UUID
-                let roomId = req.body.roomId as UUID
+                const body = req.body as PostMessageRouteInput
+                const isBodyValid = PostMessageRouteInputSchema.safeParse(body).success
+                if (!agentId || !isBodyValid || !validateUuid(body.sessionId) || !validateUuid(body.userId)) {
+                    res.status(400).send("Missing or invalid params.");
+                    return;
+                }
+                const roomId = req.body.sessionId as UUID
+
                 const runtime = this.agents.get(agentId);
                 if (!runtime) {
                   res.status(500)
                   return;
                 }
-                if (!agentId || !runtime || !userId || roomId ? !validateUuid(roomId) : false) {
-                    res.status(404).send("Missing or invalid params.");
-                    return;
-                }
-
-                if (!roomId ) {
-                  roomId = stringToUuid(randomBytes(Math.ceil(32 / 2)).toString('hex').slice(0, 32))
-                }
 
                 await runtime.ensureConnection(
-                    userId,
+                    body.userId as UUID,
                     roomId,
                     req.body.userName,
                     req.body.name,
                     "direct"
                 );
 
-                const text = req.body.text;
                 // if empty text, directly return
-                if (!text) {
+                if (!body.query) {
                     res.json([]);
                     return;
                 }
 
-                const messageId = stringToUuid(Date.now().toString());
-
-                const attachments: Media[] = [];
-                if (req.file) {
-                    const filePath = path.join(
-                        process.cwd(),
-                        "data",
-                        "uploads",
-                        req.file.filename
-                    );
-                    attachments.push({
-                        id: Date.now().toString(),
-                        url: filePath,
-                        title: req.file.originalname,
-                        source: "direct",
-                        description: `Uploaded file: ${req.file.originalname}`,
-                        text: "",
-                        contentType: req.file.mimetype,
-                    });
-                }
 
                 const content: Content = {
-                    text,
-                    attachments,
+                    text: body.query,
                     source: "direct",
-                    inReplyTo: undefined,
+                    actor: 'human',
                 };
 
-                const userMessage = {
-                    content,
-                    userId,
-                    roomId,
-                    agentId: runtime.agentId,
-                };
+                const messageId = stringToUuid(`${Date.now().toString()}-${body.userId}`);
 
                 const memory: Memory = {
-                    id: stringToUuid(messageId + "-" + userId),
-                    ...userMessage,
+                    id: messageId,
+                    userId: body.userId as UUID,
                     agentId: runtime.agentId,
-                    userId,
                     roomId,
                     content,
-                    createdAt: Date.now(),
                 };
 
                 await runtime.messageManager.addEmbeddingToMemory(memory);
                 await runtime.messageManager.createMemory(memory);
 
-                let state = await runtime.composeState(userMessage, {
+                let state = await runtime.composeState(memory, {
                     agentName: runtime.character.name,
                 });
 
@@ -229,8 +199,8 @@ export class DirectClient {
                     context,
                     modelClass: ModelClass.LARGE,
                 });
-                response.roomId = roomId
-                response.userId = userId
+                response.actor = 'ai'
+                response.source = 'direct'
 
                 if (!response) {
                     res.status(500).send(
@@ -241,12 +211,12 @@ export class DirectClient {
 
                 // save response to memory
                 const responseMessage: Memory = {
-                    id: stringToUuid(messageId + "-" + runtime.agentId),
-                    ...userMessage,
+                    id: stringToUuid(`${Date.now().toString()}-${runtime.agentId}`),
+                    roomId: body.sessionId as UUID,
                     userId: runtime.agentId,
+                    agentId: runtime.agentId,
                     content: response,
                     embedding: getEmbeddingZeroVector(),
-                    createdAt: Date.now(),
                 };
 
                 await runtime.messageManager.createMemory(responseMessage);
@@ -299,11 +269,9 @@ export class DirectClient {
         async (req: express.Request, res: express.Response) => {
           elizaLogger.log('Insert memory request received')
           const agentId = req.params.agentId as UUID
-          const userId = req.body.userId as UUID
-          const roomId = req.body.roomId as UUID
-          const content = req.body.content as Content
-          const isContentValid = memoryContentSchema.safeParse(content).success
-          if (!agentId || !userId || !validateUuid(roomId) || !isContentValid) {
+          const body = req.body as PostMemoryRouteInput
+          const isContentValid = PostMemoryRouteInputSchema.safeParse(body).success
+          if (!agentId || !validateUuid(body.userId) || !validateUuid(body.message.sessionId) || !isContentValid) {
               res.status(400).send("Missing or invalid params.");
               return;
           }
@@ -313,39 +281,16 @@ export class DirectClient {
             res.sendStatus(500)
             return;
           }
-
-          // add source to content
-          content.source = 'direct'
+          const memory = mapPostMemoryToPartialMemory(body, agentId)
 
           await runtime.ensureConnection(
-            userId,
-            roomId,
-            req.body.userName,
-            req.body.name,
-            content.source
+            memory.userId,
+            memory.roomId
           );
-
-          const messageId = stringToUuid(Date.now().toString())
-          const userMessage = {
-            content,
-            userId,
-            roomId,
-            agentId: runtime.agentId,
-          }
-
-          const memory: Memory = {
-              id: stringToUuid(`${messageId}-${userId}`),
-              ...userMessage,
-              agentId: runtime.agentId,
-              userId,
-              roomId,
-              content,
-              createdAt: Date.now(),
-          };
 
           await runtime.messageManager.addEmbeddingToMemory(memory);
           await runtime.messageManager.createMemory(memory);
-          elizaLogger.info('Memory inserted', userId, roomId, content)
+          elizaLogger.info('Memory inserted', memory.userId, memory.roomId, memory.content)
 
           res.sendStatus(200)
         })

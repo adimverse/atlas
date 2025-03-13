@@ -340,7 +340,7 @@ export class PostgresDatabaseAdapter
                 .map((_, i) => `$${i + 2}`)
                 .join(", ");
 
-            let query = `SELECT * FROM memories WHERE type = $1 AND "roomId" IN (${placeholders})`;
+            let query = `SELECT content, "createdAt" FROM memories WHERE type = $1 AND "roomId" IN (${placeholders})`;
             let queryParams = [params.tableName, ...params.roomIds];
 
             if (params.agentId) {
@@ -358,6 +358,7 @@ export class PostgresDatabaseAdapter
             const { rows } = await this.pool.query(query, queryParams);
             return rows.map((row) => ({
                 ...row,
+                createdAt: row.createdAt ? new Date(row.createdAt).getTime() : undefined,
                 content:
                     typeof row.content === "string"
                         ? JSON.parse(row.content)
@@ -422,14 +423,14 @@ export class PostgresDatabaseAdapter
                 const accountId = account.id ?? v4();
                 await this.pool.query(
                     `INSERT INTO accounts (id, name, username, email, "avatarUrl", details)
-                    VALUES ($1, $2, $3, $4, $5, $6)`,
+                    VALUES ($1, COALESCE($2, name), COALESCE($3, username), COALESCE($4, email), COALESCE($5, "avatarUrl"), COALESCE($6, details))`,
                     [
                         accountId,
                         account.name,
-                        account.username || "",
-                        account.email || "",
-                        account.avatarUrl || "",
-                        JSON.stringify(account.details),
+                        account.username,
+                        account.email,
+                        account.avatarUrl,
+                        account.details ?? JSON.stringify(account.details),
                     ]
                 );
                 elizaLogger.debug("Account created successfully:", {
@@ -505,6 +506,7 @@ export class PostgresDatabaseAdapter
 
             return {
                 ...rows[0],
+                createdAt: rows[0].createdAt ? new Date(rows[0].createdAt).getTime() : undefined,
                 content:
                     typeof rows[0].content === "string"
                         ? JSON.parse(rows[0].content)
@@ -532,6 +534,7 @@ export class PostgresDatabaseAdapter
 
             return rows.map((row) => ({
                 ...row,
+                createdAt: row.createdAt ? new Date(row.createdAt).getTime() : undefined,
                 content:
                     typeof row.content === "string"
                         ? JSON.parse(row.content)
@@ -674,6 +677,7 @@ export class PostgresDatabaseAdapter
             const { rows } = await this.pool.query(sql, values);
             return rows.map((row) => ({
                 ...row,
+                createdAt: row.createdAt ? new Date(row.createdAt).getTime() : undefined,
                 content:
                     typeof row.content === "string"
                         ? JSON.parse(row.content)
