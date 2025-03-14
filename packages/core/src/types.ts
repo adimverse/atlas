@@ -1007,6 +1007,11 @@ export interface IDatabaseAdapter {
     /** Create new account */
     createAccount(account: Account): Promise<boolean>;
 
+    getMemoryCountInRoom(params: {
+      roomId: UUID
+      agentId: UUID
+    }): Promise<number>
+
     /** Get memories matching criteria */
     getMemories(params: {
         roomId: UUID;
@@ -1113,6 +1118,8 @@ export interface IDatabaseAdapter {
     updateRoom(roomId: UUID, updates: { excerpt?: string, active?: boolean }): Promise<Room>;
 
     removeRoom(roomId: UUID): Promise<void>;
+
+    getRoomsCountForParticipant(userId: UUID): Promise<number>;
 
     getRoomsForParticipant(userId: UUID, paginationParams?: PaginationParams): Promise<Room[]>;
 

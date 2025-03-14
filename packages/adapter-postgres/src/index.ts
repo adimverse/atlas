@@ -620,6 +620,26 @@ export class PostgresDatabaseAdapter
         });
     }
 
+    async getMemoryCountInRoom(params: {
+      roomId: UUID
+      agentId: UUID
+    }): Promise<number> {
+      const result = await this.pool.query<{totalRows:string}>(`SELECT COUNT(*) AS "totalRows" 
+        FROM memories 
+        WHERE "roomId" = $1 
+          AND "agentId" = $2 
+          AND type = $3;`, 
+        [
+          params.roomId,
+          params.agentId,
+          'messages'
+        ]
+      )
+      console.log(params.roomId, params.agentId)
+
+      return result.rows[0].totalRows ? Number(result.rows[0].totalRows) : 0
+    }
+
     async getMemories(params: {
         roomId: UUID;
         count?: number;
@@ -1379,6 +1399,22 @@ export class PostgresDatabaseAdapter
                 roomId,
             ]);
         }, "removeAllGoals");
+    }
+
+    async getRoomsCountForParticipant(userId: UUID) {
+      const result = await this.pool.query<{ roomsCount: string }>(`
+        SELECT COUNT(*) AS "roomsCount"
+        FROM rooms
+        WHERE id IN (
+          SELECT "roomId"
+          FROM participants
+          WHERE "userId" = $1
+        )`,
+        [
+          userId
+        ]
+      )
+      return result.rows[0].roomsCount ? Number(result.rows[0].roomsCount) : 0
     }
 
     async getRoomsForParticipant(userId: UUID, paginationParams: PaginationParams): Promise<Room[]> {

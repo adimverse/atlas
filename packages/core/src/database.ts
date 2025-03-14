@@ -81,6 +81,17 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
     abstract createAccount(account: Account): Promise<boolean>;
 
     /**
+     * Gets the count of total memories within a room, with filtering options.
+     * @param params.roomId UUID for the room to filter by.
+     * @param params.agentId UUID for the agent to find by.
+     * @returns A Promise for a number representing the count of the memories.
+     */
+    abstract getMemoryCountInRoom(params: {
+      roomId: UUID
+      agentId: UUID
+    }): Promise<number>
+
+    /**
      * Retrieves memories based on the specified parameters.
      * @param params An object containing parameters for the memory retrieval.
      * @returns A Promise that resolves to an array of Memory objects.
@@ -313,6 +324,13 @@ export abstract class DatabaseAdapter<DB = any> implements IDatabaseAdapter {
      * @returns A Promise that resolves when the room has been removed.
      */
     abstract removeRoom(roomId: UUID): Promise<void>;
+
+    /**
+     * Gets the count of rooms for this participant.
+     * @param roomId UUID of the room to filter by.
+     * @returns A Promise for a number representing the count of rooms.
+     */
+    abstract getRoomsCountForParticipant(userId: UUID): Promise<number>;
 
     /**
      * Retrieves room IDs for which a specific user is a participant.
